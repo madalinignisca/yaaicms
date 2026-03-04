@@ -71,6 +71,10 @@ type Config struct {
 	// Multi-tenancy
 	BaseDomain string // e.g. "smartpress.io" — tenants are {subdomain}.smartpress.io
 
+	// Kubernetes integration (custom domain TLS provisioning)
+	K8sEnabled   bool   // Enable K8s resource management for custom domains
+	K8sNamespace string // K8s namespace for resources
+
 	// S3-compatible object storage (Hetzner CEPH)
 	S3Endpoint      string
 	S3Region        string
@@ -100,7 +104,9 @@ func Load() (*Config, error) {
 		ValkeyPort:     envOrDefault("VALKEY_PORT", "6379"),
 		ValkeyPassword: os.Getenv("VALKEY_PASSWORD"),
 
-		BaseDomain: envOrDefault("BASE_DOMAIN", "localhost"),
+		BaseDomain:   envOrDefault("BASE_DOMAIN", "localhost"),
+		K8sEnabled:   os.Getenv("K8S_ENABLED") == "true",
+		K8sNamespace: envOrDefault("K8S_NAMESPACE", "yaaicms"),
 
 		AIProvider: envOrDefault("AI_PROVIDER", "gemini"),
 

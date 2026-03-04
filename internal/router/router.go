@@ -25,7 +25,7 @@ import (
 // New creates and returns the configured Chi router with all middleware
 // and route groups wired up. Set secureCookies to true in production to
 // mark CSRF cookies as Secure (HTTPS-only).
-func New(sessionStore *session.Store, admin *handlers.Admin, auth *handlers.Auth, public *handlers.Public, tenant *handlers.TenantAdmin, tenantStore *store.TenantStore, valkeyClient *redis.Client, baseDomain string, secureCookies bool) chi.Router {
+func New(sessionStore *session.Store, admin *handlers.Admin, auth *handlers.Auth, public *handlers.Public, tenant *handlers.TenantAdmin, tenantStore *store.TenantStore, domainResolver middleware.DomainResolver, valkeyClient *redis.Client, baseDomain string, secureCookies bool) chi.Router {
 	r := chi.NewRouter()
 
 	// Rate limiters: auth endpoints are tightly limited (brute-force protection),
@@ -203,6 +203,10 @@ func New(sessionStore *session.Store, admin *handlers.Admin, auth *handlers.Auth
 				r.Get("/{id}/users", tenant.TenantUsers)
 				r.Post("/{id}/users", tenant.TenantAddUser)
 				r.Delete("/{id}/users/{uid}", tenant.TenantRemoveUser)
+				r.Get("/{id}/domains", tenant.TenantDomains)
+				r.Post("/{id}/domains", tenant.TenantAddDomain)
+				r.Delete("/{id}/domains/{did}", tenant.TenantDeleteDomain)
+				r.Post("/{id}/domains/{did}/verify", tenant.TenantVerifyDomain)
 			})
 		})
 	})
@@ -210,7 +214,7 @@ func New(sessionStore *session.Store, admin *handlers.Admin, auth *handlers.Auth
 	// Public routes — served by the dynamic template engine.
 	// Tenant resolution middleware identifies which tenant to serve based on subdomain.
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.ResolveTenant(tenantStore, valkeyClient, baseDomain))
+		r.Use(middleware.ResolveTenant(tenantStore, domainResolver, valkeyClient, baseDomain))
 		r.Get("/", public.Homepage)
 		r.Get("/{slug}", public.Page)
 	})

@@ -61,6 +61,11 @@
                         {{.CreatedAt.Format "Jan 2, 2006"}}
                     </td>
                     <td class="px-6 py-4 text-right text-sm space-x-3">
+                        <a href="/admin/tenants/{{.ID}}/domains"
+                           hx-get="/admin/tenants/{{.ID}}/domains"
+                           hx-target="#main-content"
+                           hx-push-url="true"
+                           class="text-indigo-600 hover:text-indigo-800">Domains</a>
                         <a href="/admin/tenants/{{.ID}}/users"
                            hx-get="/admin/tenants/{{.ID}}/users"
                            hx-target="#main-content"

@@ -25,6 +25,9 @@ const (
 	// tenantCachePrefix is the Valkey key prefix for cached tenant lookups.
 	tenantCachePrefix = "tenant:"
 
+	// domainCachePrefix is the Valkey key prefix for custom domain lookups.
+	domainCachePrefix = "domain:"
+
 	// tenantCacheTTL is how long tenant lookups are cached in Valkey.
 	tenantCacheTTL = 5 * time.Minute
 )
@@ -35,46 +38,96 @@ type TenantFinder interface {
 	FindBySubdomain(subdomain string) (*models.Tenant, error)
 }
 
-// ResolveTenant extracts the subdomain from the Host header, looks up the
-// tenant in the database (with Valkey caching), and injects it into the
-// request context. Returns 404 for unknown or inactive tenants.
+// DomainResolver is the interface for looking up tenants by custom domain.
+// Satisfied by store.TenantResolver.
+type DomainResolver interface {
+	FindByCustomDomain(domain string) (*models.Tenant, error)
+}
+
+// ResolveTenant extracts the tenant from the Host header using dual resolution:
+//  1. If the host does NOT end with baseDomain, try custom domain lookup.
+//  2. If the host ends with baseDomain, extract the subdomain (existing logic).
 //
-// baseDomain is the platform's base domain (e.g., "smartpress.io").
-// Requests to "blog1.smartpress.io" resolve subdomain "blog1".
-func ResolveTenant(finder TenantFinder, cache *redis.Client, baseDomain string) func(http.Handler) http.Handler {
+// Both paths use Valkey caching with separate key prefixes.
+// The domains parameter may be nil to disable custom domain resolution.
+func ResolveTenant(finder TenantFinder, domains DomainResolver, cache *redis.Client, baseDomain string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			subdomain := extractSubdomain(r.Host, baseDomain)
-			if subdomain == "" {
-				// No subdomain — treat as the default tenant.
-				// In development, localhost requests use "default" tenant.
-				subdomain = "default"
+			// Strip port from Host header.
+			host := r.Host
+			if idx := strings.LastIndex(host, ":"); idx != -1 {
+				host = host[:idx]
 			}
 
-			// Try Valkey cache first.
-			tenant := getCachedTenant(r.Context(), cache, subdomain)
+			var tenant *models.Tenant
 
-			// Cache miss — hit the database.
+			if !strings.HasSuffix(host, baseDomain) && domains != nil {
+				// Host doesn't match base domain — try custom domain resolution.
+				tenant = resolveByCustomDomain(r.Context(), domains, cache, host)
+			} else {
+				// Host matches base domain — use subdomain resolution.
+				subdomain := extractSubdomain(r.Host, baseDomain)
+				if subdomain == "" {
+					subdomain = "default"
+				}
+				tenant = resolveBySubdomain(r.Context(), finder, cache, subdomain)
+			}
+
 			if tenant == nil {
-				var err error
-				tenant, err = finder.FindBySubdomain(subdomain)
-				if err != nil {
-					slog.Error("tenant lookup failed", "subdomain", subdomain, "error", err)
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-					return
-				}
-				if tenant == nil || !tenant.IsActive {
-					http.NotFound(w, r)
-					return
-				}
-				// Cache the result.
-				cacheTenant(r.Context(), cache, subdomain, tenant)
+				http.NotFound(w, r)
+				return
 			}
 
 			ctx := context.WithValue(r.Context(), TenantKey, tenant)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// resolveBySubdomain looks up a tenant by subdomain with caching.
+func resolveBySubdomain(ctx context.Context, finder TenantFinder, cache *redis.Client, subdomain string) *models.Tenant {
+	// Try Valkey cache first.
+	tenant := getCachedTenant(ctx, cache, tenantCachePrefix+subdomain)
+	if tenant != nil {
+		return tenant
+	}
+
+	// Cache miss — hit the database.
+	tenant, err := finder.FindBySubdomain(subdomain)
+	if err != nil {
+		slog.Error("tenant lookup failed", "subdomain", subdomain, "error", err)
+		return nil
+	}
+	if tenant == nil || !tenant.IsActive {
+		return nil
+	}
+
+	// Cache the result.
+	cacheTenant(ctx, cache, tenantCachePrefix+subdomain, tenant)
+	return tenant
+}
+
+// resolveByCustomDomain looks up a tenant by custom domain with caching.
+func resolveByCustomDomain(ctx context.Context, domains DomainResolver, cache *redis.Client, host string) *models.Tenant {
+	// Try Valkey cache first.
+	tenant := getCachedTenant(ctx, cache, domainCachePrefix+host)
+	if tenant != nil {
+		return tenant
+	}
+
+	// Cache miss — hit the database.
+	tenant, err := domains.FindByCustomDomain(host)
+	if err != nil {
+		slog.Error("custom domain lookup failed", "domain", host, "error", err)
+		return nil
+	}
+	if tenant == nil {
+		return nil
+	}
+
+	// Cache the result.
+	cacheTenant(ctx, cache, domainCachePrefix+host, tenant)
+	return tenant
 }
 
 // TenantFromCtx extracts the tenant from the request context.
@@ -111,15 +164,15 @@ func extractSubdomain(host, baseDomain string) string {
 	return parts[len(parts)-1]
 }
 
-// getCachedTenant retrieves a tenant from Valkey cache by subdomain.
+// getCachedTenant retrieves a tenant from Valkey cache by its full cache key.
 // Returns nil on cache miss or error.
-func getCachedTenant(ctx context.Context, cache *redis.Client, subdomain string) *models.Tenant {
+func getCachedTenant(ctx context.Context, cache *redis.Client, cacheKey string) *models.Tenant {
 	if cache == nil {
 		return nil
 	}
 
 	// We store a simple serialized format: "id|name|subdomain|active"
-	val, err := cache.Get(ctx, tenantCachePrefix+subdomain).Result()
+	val, err := cache.Get(ctx, cacheKey).Result()
 	if err != nil {
 		return nil
 	}
@@ -147,8 +200,8 @@ func getCachedTenant(ctx context.Context, cache *redis.Client, subdomain string)
 	}
 }
 
-// cacheTenant stores a tenant in the Valkey cache.
-func cacheTenant(ctx context.Context, cache *redis.Client, subdomain string, t *models.Tenant) {
+// cacheTenant stores a tenant in the Valkey cache under the given key.
+func cacheTenant(ctx context.Context, cache *redis.Client, cacheKey string, t *models.Tenant) {
 	if cache == nil {
 		return
 	}
@@ -159,5 +212,5 @@ func cacheTenant(ctx context.Context, cache *redis.Client, subdomain string, t *
 	}
 
 	val := fmt.Sprintf("%s|%s|%s|%s", t.ID.String(), t.Name, t.Subdomain, active)
-	cache.Set(ctx, tenantCachePrefix+subdomain, val, tenantCacheTTL)
+	cache.Set(ctx, cacheKey, val, tenantCacheTTL)
 }

@@ -7,6 +7,10 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - rbac.yaml
+  - cloudflare-issuer.yaml
+  - wildcard-cert.yaml
+  - wildcard-ingressroute.yaml
 
 namespace: yaaicms
 

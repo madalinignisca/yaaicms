@@ -7,11 +7,13 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"yaaicms/internal/k8s"
 	"yaaicms/internal/middleware"
 	"yaaicms/internal/models"
 	"yaaicms/internal/render"
@@ -19,21 +21,30 @@ import (
 	"yaaicms/internal/store"
 )
 
+// domainPattern validates domain name format.
+var domainPattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$`)
+
 // TenantAdmin groups all super-admin tenant management HTTP handlers.
 type TenantAdmin struct {
 	renderer    *render.Renderer
 	sessions    *session.Store
 	tenantStore *store.TenantStore
 	userStore   *store.UserStore
+	domainStore *store.TenantDomainStore
+	k8sManager  *k8s.Manager
+	baseDomain  string
 }
 
 // NewTenantAdmin creates a new TenantAdmin handler group.
-func NewTenantAdmin(renderer *render.Renderer, sessions *session.Store, tenantStore *store.TenantStore, userStore *store.UserStore) *TenantAdmin {
+func NewTenantAdmin(renderer *render.Renderer, sessions *session.Store, tenantStore *store.TenantStore, userStore *store.UserStore, domainStore *store.TenantDomainStore, k8sManager *k8s.Manager, baseDomain string) *TenantAdmin {
 	return &TenantAdmin{
 		renderer:    renderer,
 		sessions:    sessions,
 		tenantStore: tenantStore,
 		userStore:   userStore,
+		domainStore: domainStore,
+		k8sManager:  k8sManager,
+		baseDomain:  baseDomain,
 	}
 }
 
@@ -390,4 +401,186 @@ func (ta *TenantAdmin) SelectTenantSubmit(w http.ResponseWriter, r *http.Request
 	}
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+}
+
+// TenantDomains renders the custom domain management page for a tenant.
+func (ta *TenantAdmin) TenantDomains(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	tenant, err := ta.tenantStore.FindByID(id)
+	if err != nil || tenant == nil {
+		slog.Error("failed to find tenant for domains", "error", err)
+		http.NotFound(w, r)
+		return
+	}
+
+	domains, err := ta.domainStore.ListByTenant(id)
+	if err != nil {
+		slog.Error("failed to list tenant domains", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	ta.renderer.Page(w, r, "tenant_domains", &render.PageData{
+		Section: "tenants",
+		Data: map[string]any{
+			"Tenant":     tenant,
+			"Domains":    domains,
+			"BaseDomain": ta.baseDomain,
+		},
+	})
+}
+
+// TenantAddDomain processes the add custom domain form.
+func (ta *TenantAdmin) TenantAddDomain(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	domain := strings.TrimSpace(strings.ToLower(r.FormValue("domain")))
+
+	tenant, err := ta.tenantStore.FindByID(tenantID)
+	if err != nil || tenant == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Validate domain format.
+	if !domainPattern.MatchString(domain) {
+		ta.renderDomainPage(w, r, tenant, "Invalid domain format.")
+		return
+	}
+
+	// Reject subdomains of the base domain (those use subdomain routing).
+	if strings.HasSuffix(domain, "."+ta.baseDomain) || domain == ta.baseDomain {
+		ta.renderDomainPage(w, r, tenant, "Cannot add a subdomain of the platform domain.")
+		return
+	}
+
+	// Check for duplicates.
+	existing, err := ta.domainStore.FindByDomain(domain)
+	if err != nil {
+		slog.Error("domain duplicate check failed", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if existing != nil {
+		ta.renderDomainPage(w, r, tenant, "This domain is already registered.")
+		return
+	}
+
+	d, err := ta.domainStore.Create(tenantID, domain)
+	if err != nil {
+		slog.Error("failed to create tenant domain", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("custom domain added", "domain", d.Domain, "tenant_id", tenantID)
+
+	redirectURL := "/admin/tenants/" + tenantID.String() + "/domains"
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", redirectURL)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+// TenantDeleteDomain removes a custom domain and its K8s resources.
+func (ta *TenantAdmin) TenantDeleteDomain(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	domainID, err := uuid.Parse(chi.URLParam(r, "did"))
+	if err != nil {
+		http.Error(w, "Invalid domain ID", http.StatusBadRequest)
+		return
+	}
+
+	// Look up the domain to get the domain name for K8s cleanup.
+	domain, err := ta.domainStore.FindByID(domainID)
+	if err != nil || domain == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Delete K8s resources (Certificate + IngressRoute).
+	if ta.k8sManager != nil {
+		if err := ta.k8sManager.DeleteDomainResources(domain.Domain); err != nil {
+			slog.Error("failed to delete k8s resources", "domain", domain.Domain, "error", err)
+			// Continue with DB deletion even if K8s cleanup fails.
+		}
+	}
+
+	if err := ta.domainStore.Delete(domainID); err != nil {
+		slog.Error("failed to delete tenant domain", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("custom domain deleted", "domain", domain.Domain, "tenant_id", tenantID)
+
+	redirectURL := "/admin/tenants/" + tenantID.String() + "/domains"
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", redirectURL)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+// TenantVerifyDomain triggers an immediate DNS verification check for a domain.
+func (ta *TenantAdmin) TenantVerifyDomain(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	domainID, err := uuid.Parse(chi.URLParam(r, "did"))
+	if err != nil {
+		http.Error(w, "Invalid domain ID", http.StatusBadRequest)
+		return
+	}
+
+	domain, err := ta.domainStore.FindByID(domainID)
+	if err != nil || domain == nil || domain.Status != models.DomainStatusPending {
+		http.NotFound(w, r)
+		return
+	}
+
+	slog.Info("manual domain verification triggered", "domain", domain.Domain)
+
+	redirectURL := "/admin/tenants/" + tenantID.String() + "/domains"
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", redirectURL)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+// renderDomainPage is a helper to re-render the domain page with an error message.
+func (ta *TenantAdmin) renderDomainPage(w http.ResponseWriter, r *http.Request, tenant *models.Tenant, errMsg string) {
+	domains, _ := ta.domainStore.ListByTenant(tenant.ID)
+	ta.renderer.Page(w, r, "tenant_domains", &render.PageData{
+		Section: "tenants",
+		Data: map[string]any{
+			"Tenant":      tenant,
+			"Domains":     domains,
+			"BaseDomain":  ta.baseDomain,
+			"Error":       errMsg,
+			"DomainValue": r.FormValue("domain"),
+		},
+	})
 }

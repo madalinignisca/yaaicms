@@ -1,0 +1,128 @@
+{{/* Copyright (c) 2026 Madalin Gabriel Ignisca <hi@madalin.me> */}}
+{{/* Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh> */}}
+{{/* All rights reserved. See LICENSE for details. */}}
+{{define "title"}}Domains — {{.Data.Tenant.Name}}{{end}}
+
+{{define "content"}}
+<div class="space-y-6">
+    <div class="mb-4">
+        <a href="/admin/tenants"
+           hx-get="/admin/tenants"
+           hx-target="#main-content"
+           hx-push-url="true"
+           class="text-sm text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+            </svg>
+            Back to Tenants
+        </a>
+    </div>
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-900">Custom Domains for {{.Data.Tenant.Name}}</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Subdomain: <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{{.Data.Tenant.Subdomain}}</code>
+            </p>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="rounded-md bg-blue-50 p-4 border border-blue-200">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3 text-sm text-blue-700">
+                <p class="font-medium">Before adding a domain:</p>
+                <p class="mt-1">Point your domain's CNAME record to <code class="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">{{.Data.BaseDomain}}</code>. The system will verify DNS automatically and provision a TLS certificate.</p>
+            </div>
+        </div>
+    </div>
+
+    {{if .Data.Error}}
+    <div class="rounded-md bg-red-50 p-4 border border-red-200">
+        <p class="text-sm text-red-700">{{.Data.Error}}</p>
+    </div>
+    {{end}}
+
+    <!-- Add domain form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">Add Custom Domain</h3>
+        <form method="POST" action="/admin/tenants/{{.Data.Tenant.ID}}/domains"
+              hx-post="/admin/tenants/{{.Data.Tenant.ID}}/domains"
+              class="flex items-end gap-4">
+            <div class="flex-1">
+                <label for="domain" class="block text-sm font-medium text-gray-700">Domain</label>
+                <input type="text" name="domain" id="domain" required
+                       placeholder="example.com"
+                       pattern="[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                       value="{{.Data.DomainValue}}">
+            </div>
+            <button type="submit"
+                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors">
+                Add Domain
+            </button>
+        </form>
+    </div>
+
+    <!-- Domain list -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {{if and .Data .Data.Domains}}
+                {{range .Data.Domains}}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <code class="text-sm text-gray-900">{{.Domain}}</code>
+                    </td>
+                    <td class="px-6 py-4">
+                        {{if eq .Status "active"}}
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Active</span>
+                        {{else if eq .Status "pending_verification"}}
+                        <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">Pending Verification</span>
+                        {{else if eq .Status "verified"}}
+                        <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">Verified</span>
+                        {{else if eq .Status "provisioning"}}
+                        <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">Provisioning TLS</span>
+                        {{else if eq .Status "failed"}}
+                        <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Failed</span>
+                        {{end}}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{.CreatedAt.Format "Jan 2, 2006"}}
+                    </td>
+                    <td class="px-6 py-4 text-right text-sm space-x-3">
+                        {{if eq .Status "pending_verification"}}
+                        <button hx-post="/admin/tenants/{{$.Data.Tenant.ID}}/domains/{{.ID}}/verify"
+                                class="text-indigo-600 hover:text-indigo-800">Verify Now</button>
+                        {{end}}
+                        <button hx-delete="/admin/tenants/{{$.Data.Tenant.ID}}/domains/{{.ID}}"
+                                hx-confirm="Remove domain '{{.Domain}}'? This will also remove associated TLS certificates."
+                                class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+                {{end}}
+                {{else}}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500">
+                        No custom domains configured. Add one above.
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

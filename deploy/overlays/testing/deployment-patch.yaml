@@ -27,6 +27,14 @@ spec:
               value: "6380"
             - name: VALKEY_DB
               value: "101"
+            # Multi-tenancy: base domain for subdomain resolution.
+            - name: BASE_DOMAIN
+              value: "madalin.me"
+            # K8s integration: enable custom domain TLS provisioning.
+            - name: K8S_ENABLED
+              value: "true"
+            - name: K8S_NAMESPACE
+              value: "yaaicms"
           # Credentials come from the yaaicms-secrets Secret (envFrom in base).
           resources:
             requests:

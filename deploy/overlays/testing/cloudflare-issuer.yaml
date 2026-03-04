@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Madalin Gabriel Ignisca <hi@madalin.me>
+# Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh>
+# All rights reserved. See LICENSE for details.
+
+# ClusterIssuer for DNS-01 challenges via Cloudflare.
+# Used to issue wildcard certificates (*.madalin.me).
+#
+# Prerequisite: create the Cloudflare API token secret:
+#   kubectl create secret generic cloudflare-api-token \
+#     --from-literal=api-token=<YOUR_TOKEN> \
+#     -n yaaicms
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-cloudflare
+spec:
+  acme:
+    server: https://acme-v2.api.letsencrypt.org/directory
+    email: git@madalin.me
+    privateKeySecretRef:
+      name: letsencrypt-cloudflare-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token

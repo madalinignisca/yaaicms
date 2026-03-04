@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Madalin Gabriel Ignisca <hi@madalin.me>
+# Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh>
+# All rights reserved. See LICENSE for details.
+
+# Traefik IngressRoute for wildcard *.madalin.me subdomain routing.
+# All subdomains are routed to the app, which resolves tenants internally.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: yaaicms-wildcard
+  namespace: yaaicms
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: HostRegexp(`^.+\.madalin\.me$`)
+      kind: Rule
+      services:
+        - name: yaaicms
+          port: 80
+    - match: Host(`madalin.me`)
+      kind: Rule
+      services:
+        - name: yaaicms
+          port: 80
+  tls:
+    secretName: wildcard-madalin-me-tls

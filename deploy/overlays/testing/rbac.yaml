@@ -1,0 +1,46 @@
+# Copyright (c) 2026 Madalin Gabriel Ignisca <hi@madalin.me>
+# Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh>
+# All rights reserved. See LICENSE for details.
+
+# ServiceAccount, Role, and RoleBinding for the YaaiCMS pod.
+# Grants permissions to manage Certificate CRs, IngressRoute CRs,
+# and read TLS secrets — needed for custom domain provisioning.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: yaaicms
+  namespace: yaaicms
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: yaaicms-domain-manager
+  namespace: yaaicms
+rules:
+  # cert-manager Certificate resources
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates"]
+    verbs: ["create", "delete", "get", "list"]
+  # Traefik IngressRoute resources
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes"]
+    verbs: ["create", "delete", "get", "list"]
+  # TLS secrets (read-only to check certificate readiness, delete for cleanup)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: yaaicms-domain-manager
+  namespace: yaaicms
+subjects:
+  - kind: ServiceAccount
+    name: yaaicms
+    namespace: yaaicms
+roleRef:
+  kind: Role
+  name: yaaicms-domain-manager
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Madalin Gabriel Ignisca <hi@madalin.me>
+# Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh>
+# All rights reserved. See LICENSE for details.
+
+# Wildcard TLS certificate for *.madalin.me via DNS-01 (Cloudflare).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-madalin-me
+  namespace: yaaicms
+spec:
+  secretName: wildcard-madalin-me-tls
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  dnsNames:
+    - "madalin.me"
+    - "*.madalin.me"

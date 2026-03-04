@@ -23,6 +23,7 @@ import (
 	"yaaicms/internal/engine"
 	"yaaicms/internal/handlers"
 	"yaaicms/internal/imaging"
+	"yaaicms/internal/k8s"
 	"yaaicms/internal/render"
 	"yaaicms/internal/router"
 	"yaaicms/internal/session"
@@ -96,6 +97,8 @@ func main() {
 
 	// Initialize data stores.
 	tenantStore := store.NewTenantStore(db)
+	domainStore := store.NewTenantDomainStore(db)
+	tenantResolver := store.NewTenantResolver(tenantStore, domainStore)
 	userStore := store.NewUserStore(db)
 	contentStore := store.NewContentStore(db)
 	templateStore := store.NewTemplateStore(db)
@@ -170,14 +173,17 @@ func main() {
 		},
 	}
 
+	// Initialize the K8s resource manager for custom domain TLS provisioning.
+	k8sManager := k8s.NewManager(cfg.K8sNamespace, cfg.K8sEnabled)
+
 	// Create handler groups with their dependencies.
 	adminHandlers := handlers.NewAdmin(renderer, sessionStore, contentStore, userStore, templateStore, mediaStore, variantStore, revisionStore, templateRevisionStore, themeStore, siteSettingStore, categoryStore, storageClient, eng, pageCache, cacheLogStore, aiRegistry, aiCfg)
 	authHandlers := handlers.NewAuth(renderer, sessionStore, userStore)
 	publicHandlers := handlers.NewPublic(eng, contentStore, mediaStore, variantStore, storageClient, pageCache)
-	tenantHandlers := handlers.NewTenantAdmin(renderer, sessionStore, tenantStore, userStore)
+	tenantHandlers := handlers.NewTenantAdmin(renderer, sessionStore, tenantStore, userStore, domainStore, k8sManager, cfg.BaseDomain)
 
 	// Set up the Chi router with all middleware and routes.
-	r := router.New(sessionStore, adminHandlers, authHandlers, publicHandlers, tenantHandlers, tenantStore, valkeyClient, cfg.BaseDomain, secureCookies)
+	r := router.New(sessionStore, adminHandlers, authHandlers, publicHandlers, tenantHandlers, tenantStore, tenantResolver, valkeyClient, cfg.BaseDomain, secureCookies)
 
 	// Create the HTTP server with sensible timeouts.
 	// WriteTimeout must accommodate AI endpoints that wait on LLM responses
@@ -188,6 +194,15 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 90 * time.Second,
 		IdleTimeout:  120 * time.Second,
+	}
+
+	// Start the background domain verifier if K8s is enabled.
+	// It periodically checks DNS and certificate status for custom domains.
+	ctx, cancelVerifier := context.WithCancel(context.Background())
+	defer cancelVerifier()
+	if cfg.K8sEnabled {
+		verifier := k8s.NewVerifier(domainStore, k8sManager, valkeyClient, cfg.BaseDomain)
+		go verifier.Run(ctx)
 	}
 
 	// Start the server in a goroutine so we can listen for shutdown signals.

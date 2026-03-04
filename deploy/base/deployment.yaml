@@ -16,6 +16,7 @@ spec:
       labels:
         app.kubernetes.io/name: yaaicms
     spec:
+      serviceAccountName: yaaicms
       containers:
         - name: yaaicms
           image: private-registry.default.svc.cluster.local:5000/yaaicms:latest
