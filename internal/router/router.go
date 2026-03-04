@@ -207,14 +207,18 @@ func New(sessionStore *session.Store, admin *handlers.Admin, auth *handlers.Auth
 				r.Post("/{id}/domains", tenant.TenantAddDomain)
 				r.Delete("/{id}/domains/{did}", tenant.TenantDeleteDomain)
 				r.Post("/{id}/domains/{did}/verify", tenant.TenantVerifyDomain)
+				r.Post("/{id}/domains/{did}/primary", tenant.TenantSetPrimaryDomain)
+				r.Delete("/{id}/domains/{did}/primary", tenant.TenantUnsetPrimaryDomain)
 			})
 		})
 	})
 
 	// Public routes — served by the dynamic template engine.
 	// Tenant resolution middleware identifies which tenant to serve based on subdomain.
+	// CanonicalRedirect ensures SEO-friendly 301 redirects to the primary domain.
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.ResolveTenant(tenantStore, domainResolver, valkeyClient, baseDomain))
+		r.Use(middleware.CanonicalRedirect(domainResolver, valkeyClient, baseDomain))
 		r.Get("/", public.Homepage)
 		r.Get("/{slug}", public.Page)
 	})

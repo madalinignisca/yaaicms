@@ -25,12 +25,12 @@ func NewTenantDomainStore(db *sql.DB) *TenantDomainStore {
 }
 
 // tenantDomainColumns lists the columns selected in tenant domain queries.
-const tenantDomainColumns = `id, tenant_id, domain, status, verified_at, created_at, updated_at`
+const tenantDomainColumns = `id, tenant_id, domain, status, is_primary, verified_at, created_at, updated_at`
 
 // scanTenantDomain scans a tenant domain row from the result set.
 func scanTenantDomain(scanner interface{ Scan(...any) error }) (*models.TenantDomain, error) {
 	var d models.TenantDomain
-	err := scanner.Scan(&d.ID, &d.TenantID, &d.Domain, &d.Status, &d.VerifiedAt, &d.CreatedAt, &d.UpdatedAt)
+	err := scanner.Scan(&d.ID, &d.TenantID, &d.Domain, &d.Status, &d.IsPrimary, &d.VerifiedAt, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +55,8 @@ func (s *TenantDomainStore) FindByDomain(domain string) (*models.TenantDomain, e
 // Returns (nil, nil, nil) if not found or not active.
 func (s *TenantDomainStore) FindByDomainWithTenant(domain string) (*models.TenantDomain, *models.Tenant, error) {
 	row := s.db.QueryRow(`
-		SELECT td.`+tenantDomainColumns+`,
-		       t.`+tenantColumns+`
+		SELECT td.id, td.tenant_id, td.domain, td.status, td.is_primary, td.verified_at, td.created_at, td.updated_at,
+		       t.id, t.name, t.subdomain, t.is_active, t.created_at, t.updated_at
 		FROM tenant_domains td
 		JOIN tenants t ON t.id = td.tenant_id
 		WHERE td.domain = $1 AND td.status = 'active' AND t.is_active = TRUE
@@ -65,7 +65,7 @@ func (s *TenantDomainStore) FindByDomainWithTenant(domain string) (*models.Tenan
 	var d models.TenantDomain
 	var t models.Tenant
 	err := row.Scan(
-		&d.ID, &d.TenantID, &d.Domain, &d.Status, &d.VerifiedAt, &d.CreatedAt, &d.UpdatedAt,
+		&d.ID, &d.TenantID, &d.Domain, &d.Status, &d.IsPrimary, &d.VerifiedAt, &d.CreatedAt, &d.UpdatedAt,
 		&t.ID, &t.Name, &t.Subdomain, &t.IsActive, &t.CreatedAt, &t.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
@@ -186,6 +186,55 @@ func (s *TenantDomainStore) FindByID(id uuid.UUID) (*models.TenantDomain, error)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find tenant domain by id: %w", err)
+	}
+	return d, nil
+}
+
+// SetPrimary designates a domain as the primary for its tenant. The domain must
+// be active. Uses a transaction to unset any existing primary first.
+func (s *TenantDomainStore) SetPrimary(tenantID, domainID uuid.UUID) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin set primary tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Unset any existing primary for this tenant.
+	if _, err := tx.Exec(`UPDATE tenant_domains SET is_primary = false WHERE tenant_id = $1 AND is_primary = true`, tenantID); err != nil {
+		return fmt.Errorf("unset existing primary: %w", err)
+	}
+
+	// Set the new primary (only if active).
+	result, err := tx.Exec(`UPDATE tenant_domains SET is_primary = true, updated_at = NOW() WHERE id = $1 AND tenant_id = $2 AND status = 'active'`, domainID, tenantID)
+	if err != nil {
+		return fmt.Errorf("set primary: %w", err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("domain not found or not active")
+	}
+
+	return tx.Commit()
+}
+
+// UnsetPrimary clears the primary flag for all domains of a tenant.
+func (s *TenantDomainStore) UnsetPrimary(tenantID uuid.UUID) error {
+	_, err := s.db.Exec(`UPDATE tenant_domains SET is_primary = false, updated_at = NOW() WHERE tenant_id = $1 AND is_primary = true`, tenantID)
+	if err != nil {
+		return fmt.Errorf("unset primary: %w", err)
+	}
+	return nil
+}
+
+// FindPrimaryByTenantID returns the primary domain for a tenant, or nil if none is set.
+func (s *TenantDomainStore) FindPrimaryByTenantID(tenantID uuid.UUID) (*models.TenantDomain, error) {
+	row := s.db.QueryRow(`SELECT `+tenantDomainColumns+` FROM tenant_domains WHERE tenant_id = $1 AND is_primary = true`, tenantID)
+	d, err := scanTenantDomain(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find primary domain: %w", err)
 	}
 	return d, nil
 }

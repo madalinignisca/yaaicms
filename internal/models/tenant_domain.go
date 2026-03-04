@@ -26,6 +26,7 @@ type TenantDomain struct {
 	TenantID   uuid.UUID  `json:"tenant_id"`
 	Domain     string     `json:"domain"`
 	Status     string     `json:"status"`
+	IsPrimary  bool       `json:"is_primary"`
 	VerifiedAt *time.Time `json:"verified_at,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`

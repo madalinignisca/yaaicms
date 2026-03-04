@@ -13,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"github.com/redis/go-redis/v9"
+
 	"yaaicms/internal/k8s"
 	"yaaicms/internal/middleware"
 	"yaaicms/internal/models"
@@ -32,11 +34,12 @@ type TenantAdmin struct {
 	userStore   *store.UserStore
 	domainStore *store.TenantDomainStore
 	k8sManager  *k8s.Manager
+	cache       *redis.Client
 	baseDomain  string
 }
 
 // NewTenantAdmin creates a new TenantAdmin handler group.
-func NewTenantAdmin(renderer *render.Renderer, sessions *session.Store, tenantStore *store.TenantStore, userStore *store.UserStore, domainStore *store.TenantDomainStore, k8sManager *k8s.Manager, baseDomain string) *TenantAdmin {
+func NewTenantAdmin(renderer *render.Renderer, sessions *session.Store, tenantStore *store.TenantStore, userStore *store.UserStore, domainStore *store.TenantDomainStore, k8sManager *k8s.Manager, cache *redis.Client, baseDomain string) *TenantAdmin {
 	return &TenantAdmin{
 		renderer:    renderer,
 		sessions:    sessions,
@@ -44,6 +47,7 @@ func NewTenantAdmin(renderer *render.Renderer, sessions *session.Store, tenantSt
 		userStore:   userStore,
 		domainStore: domainStore,
 		k8sManager:  k8sManager,
+		cache:       cache,
 		baseDomain:  baseDomain,
 	}
 }
@@ -82,6 +86,20 @@ func (ta *TenantAdmin) TenantCreate(w http.ResponseWriter, r *http.Request) {
 			Data: map[string]any{
 				"IsNew":     true,
 				"Error":     "Name and subdomain are required.",
+				"Name":      name,
+				"Subdomain": subdomain,
+			},
+		})
+		return
+	}
+
+	// Validate subdomain format and check against blocked list.
+	if errMsg := validateSubdomain(subdomain); errMsg != "" {
+		ta.renderer.Page(w, r, "tenant_form", &render.PageData{
+			Section: "tenants",
+			Data: map[string]any{
+				"IsNew":     true,
+				"Error":     errMsg,
 				"Name":      name,
 				"Subdomain": subdomain,
 			},
@@ -568,6 +586,95 @@ func (ta *TenantAdmin) TenantVerifyDomain(w http.ResponseWriter, r *http.Request
 		return
 	}
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+// TenantSetPrimaryDomain designates a domain as the canonical (primary) domain for SEO.
+func (ta *TenantAdmin) TenantSetPrimaryDomain(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	domainID, err := uuid.Parse(chi.URLParam(r, "did"))
+	if err != nil {
+		http.Error(w, "Invalid domain ID", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the domain belongs to this tenant before setting it as primary.
+	domain, err := ta.domainStore.FindByID(domainID)
+	if err != nil || domain == nil || domain.TenantID != tenantID {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := ta.domainStore.SetPrimary(tenantID, domainID); err != nil {
+		slog.Error("failed to set primary domain", "error", err)
+		http.Error(w, "Failed to set primary domain: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Invalidate canonical cache so the redirect picks up the change immediately.
+	ta.invalidateCanonicalCache(r, tenantID)
+
+	slog.Info("primary domain set", "domain_id", domainID, "tenant_id", tenantID)
+
+	redirectURL := "/admin/tenants/" + tenantID.String() + "/domains"
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", redirectURL)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+// TenantUnsetPrimaryDomain removes the primary designation from a tenant's domain.
+func (ta *TenantAdmin) TenantUnsetPrimaryDomain(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	domainID, err := uuid.Parse(chi.URLParam(r, "did"))
+	if err != nil {
+		http.Error(w, "Invalid domain ID", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the domain belongs to this tenant and is actually primary.
+	domain, err := ta.domainStore.FindByID(domainID)
+	if err != nil || domain == nil || domain.TenantID != tenantID || !domain.IsPrimary {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := ta.domainStore.UnsetPrimary(tenantID); err != nil {
+		slog.Error("failed to unset primary domain", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Invalidate canonical cache.
+	ta.invalidateCanonicalCache(r, tenantID)
+
+	slog.Info("primary domain unset", "tenant_id", tenantID)
+
+	redirectURL := "/admin/tenants/" + tenantID.String() + "/domains"
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", redirectURL)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+// invalidateCanonicalCache deletes the canonical host cache entry for a tenant.
+func (ta *TenantAdmin) invalidateCanonicalCache(r *http.Request, tenantID uuid.UUID) {
+	if ta.cache != nil {
+		ta.cache.Del(r.Context(), "canonical:"+tenantID.String())
+	}
 }
 
 // renderDomainPage is a helper to re-render the domain page with an error message.

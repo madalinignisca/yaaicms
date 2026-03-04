@@ -4,7 +4,11 @@
 
 package store
 
-import "yaaicms/internal/models"
+import (
+	"github.com/google/uuid"
+
+	"yaaicms/internal/models"
+)
 
 // TenantResolver wraps TenantStore and TenantDomainStore to provide both
 // subdomain and custom domain resolution. It satisfies both the TenantFinder
@@ -33,4 +37,17 @@ func (r *TenantResolver) FindByCustomDomain(domain string) (*models.Tenant, erro
 		return nil, err
 	}
 	return tenant, nil
+}
+
+// FindPrimaryDomain returns the primary domain name for a tenant.
+// Returns empty string if no primary domain is set.
+func (r *TenantResolver) FindPrimaryDomain(tenantID uuid.UUID) (string, error) {
+	d, err := r.domains.FindPrimaryByTenantID(tenantID)
+	if err != nil {
+		return "", err
+	}
+	if d == nil {
+		return "", nil
+	}
+	return d.Domain, nil
 }

@@ -28,6 +28,9 @@ const (
 	// domainCachePrefix is the Valkey key prefix for custom domain lookups.
 	domainCachePrefix = "domain:"
 
+	// canonicalCachePrefix is the Valkey key prefix for canonical host lookups.
+	canonicalCachePrefix = "canonical:"
+
 	// tenantCacheTTL is how long tenant lookups are cached in Valkey.
 	tenantCacheTTL = 5 * time.Minute
 )
@@ -38,10 +41,11 @@ type TenantFinder interface {
 	FindBySubdomain(subdomain string) (*models.Tenant, error)
 }
 
-// DomainResolver is the interface for looking up tenants by custom domain.
-// Satisfied by store.TenantResolver.
+// DomainResolver is the interface for looking up tenants by custom domain
+// and resolving canonical (primary) domains. Satisfied by store.TenantResolver.
 type DomainResolver interface {
 	FindByCustomDomain(domain string) (*models.Tenant, error)
+	FindPrimaryDomain(tenantID uuid.UUID) (string, error)
 }
 
 // ResolveTenant extracts the tenant from the Host header using dual resolution:
@@ -71,6 +75,12 @@ func ResolveTenant(finder TenantFinder, domains DomainResolver, cache *redis.Cli
 					subdomain = "default"
 				}
 				tenant = resolveBySubdomain(r.Context(), finder, cache, subdomain)
+
+				// Fallback: if no tenant found by subdomain, try custom domain.
+				// This handles cases like www.basedomain mapped as a custom domain.
+				if tenant == nil && domains != nil {
+					tenant = resolveByCustomDomain(r.Context(), domains, cache, host)
+				}
 			}
 
 			if tenant == nil {
@@ -82,6 +92,66 @@ func ResolveTenant(finder TenantFinder, domains DomainResolver, cache *redis.Cli
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// CanonicalRedirect ensures each tenant is served from a single canonical host
+// for SEO. If a primary domain is set, all other hosts (including the subdomain)
+// redirect to it. If no primary is set, custom domain requests redirect to the
+// tenant's subdomain. Must run after ResolveTenant.
+func CanonicalRedirect(domains DomainResolver, cache *redis.Client, baseDomain string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tenant := TenantFromCtx(r.Context())
+			if tenant == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Strip port from Host header.
+			host := r.Host
+			if idx := strings.LastIndex(host, ":"); idx != -1 {
+				host = host[:idx]
+			}
+
+			canonical := resolveCanonicalHost(r.Context(), domains, cache, tenant, baseDomain)
+
+			if host != canonical {
+				target := "https://" + canonical + r.URL.RequestURI()
+				http.Redirect(w, r, target, http.StatusMovedPermanently)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// resolveCanonicalHost returns the canonical host for a tenant, using Valkey cache.
+// Priority: primary domain > subdomain.baseDomain fallback.
+func resolveCanonicalHost(ctx context.Context, domains DomainResolver, cache *redis.Client, tenant *models.Tenant, baseDomain string) string {
+	cacheKey := canonicalCachePrefix + tenant.ID.String()
+
+	// Try cache first.
+	if cache != nil {
+		if val, err := cache.Get(ctx, cacheKey).Result(); err == nil && val != "" {
+			return val
+		}
+	}
+
+	// Cache miss — look up primary domain.
+	canonical := tenant.Subdomain + "." + baseDomain
+	if domains != nil {
+		if primary, err := domains.FindPrimaryDomain(tenant.ID); err == nil && primary != "" {
+			canonical = primary
+		}
+	}
+
+	// Cache the result.
+	if cache != nil {
+		cache.Set(ctx, cacheKey, canonical, tenantCacheTTL)
+	}
+
+	return canonical
 }
 
 // resolveBySubdomain looks up a tenant by subdomain with caching.
