@@ -5,17 +5,19 @@
 # ClusterIssuer for DNS-01 challenges via Cloudflare.
 # Used to issue wildcard certificates (*.madalin.me).
 #
-# Prerequisite: create the Cloudflare API token secret:
+# Prerequisite: create the Cloudflare API token secret in the CERT-MANAGER
+# namespace (ClusterIssuers read secrets from their own namespace, not the
+# workload namespace):
 #   kubectl create secret generic cloudflare-api-token \
 #     --from-literal=api-token=<YOUR_TOKEN> \
-#     -n yaaicms
+#     -n cert-manager
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-cloudflare
 spec:
   acme:
-    server: https://acme-v2.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
     email: git@madalin.me
     privateKeySecretRef:
       name: letsencrypt-cloudflare-key
