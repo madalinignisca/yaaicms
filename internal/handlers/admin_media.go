@@ -34,7 +34,7 @@ const (
 )
 
 // allowedMediaTypes defines MIME types accepted for upload.
-var allowedMediaTypes = map[string]bool{
+var allowedMediaTypes = map[string]bool{ //nolint:gochecknoglobals // constant lookup table
 	"image/jpeg":      true,
 	"image/png":       true,
 	"image/gif":       true,
@@ -45,7 +45,7 @@ var allowedMediaTypes = map[string]bool{
 
 // variantTypes are image types that support responsive variant generation
 // via libvips. GIF is excluded to preserve animation; SVG is vector.
-var variantTypes = map[string]bool{
+var variantTypes = map[string]bool{ //nolint:gochecknoglobals // constant lookup table
 	"image/jpeg": true,
 	"image/png":  true,
 	"image/webp": true,

@@ -33,8 +33,6 @@ linters:
     - paralleltest    # requires t.Parallel() in every test
     - tparallel       # same as paralleltest, different checks
     - testpackage     # requires _test package separation
-    - gochecknoglobals # package-level vars are idiomatic in Go
-    - gochecknoinits  # init() is idiomatic in Go
     - funcorder       # function ordering in files — too rigid
     - wrapcheck       # requires wrapping all external errors
     - err113          # requires static sentinel errors everywhere
@@ -128,6 +126,7 @@ linters:
           - errcheck
           - gosec
           - noinlineerr
+          - gochecknoglobals
 
       # Migration SQL files embedded as strings
       - path: internal/database/

@@ -23,7 +23,7 @@ type Variant struct {
 }
 
 // DefaultVariants defines the standard breakpoints for responsive web images.
-var DefaultVariants = []Variant{
+var DefaultVariants = []Variant{ //nolint:gochecknoglobals // constant configuration
 	{Name: "thumb", Width: 320, Quality: 75},
 	{Name: "sm", Width: 640, Quality: 80},
 	{Name: "md", Width: 1024, Quality: 80},

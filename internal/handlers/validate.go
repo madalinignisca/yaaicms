@@ -17,7 +17,7 @@ var subdomainPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$`
 
 // blockedSubdomains contains reserved and offensive subdomain names that
 // cannot be used for tenant subdomains. All entries must be lowercase.
-var blockedSubdomains = map[string]bool{
+var blockedSubdomains = map[string]bool{ //nolint:gochecknoglobals // constant lookup table
 	// Infrastructure & protocol reserved names.
 	"www":        true,
 	"www1":       true,

@@ -34,9 +34,9 @@ import (
 var contentCSS string
 
 // contentStyleTag is the pre-built <style> block, computed once at init.
-var contentStyleTag string
+var contentStyleTag string //nolint:gochecknoglobals // computed once at startup, read-only thereafter
 
-func init() {
+func init() { //nolint:gochecknoinits // one-time concatenation of constant CSS
 	contentStyleTag = "<style>" + contentCSS + "</style>"
 }
 

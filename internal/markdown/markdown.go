@@ -18,7 +18,7 @@ import (
 )
 
 // md is the configured goldmark instance, reused across calls.
-var md = goldmark.New(
+var md = goldmark.New( //nolint:gochecknoglobals // singleton markdown renderer, safe for concurrent use
 	goldmark.WithExtensions(
 		extension.GFM,            // GitHub-Flavored Markdown: tables, strikethrough, autolinks, task lists
 		extension.Typographer,    // Smart quotes and dashes
