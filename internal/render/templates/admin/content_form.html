@@ -820,17 +820,17 @@
 function uploadFeaturedImage(input) {
     if (!input.files || !input.files[0]) return;
 
-    var file = input.files[0];
+    const file = input.files[0];
     if (!file.type.startsWith('image/')) {
         alert('Please select an image file.');
         return;
     }
 
-    var formData = new FormData();
+    const formData = new FormData();
     formData.append('file', file);
     formData.append('alt_text', 'Featured image');
 
-    var csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
 
     fetch('/admin/media', {
         method: 'POST',
@@ -938,11 +938,11 @@ function mediaPicker() {
             }
             this.uploading = true;
             try {
-                var formData = new FormData();
+                const formData = new FormData();
                 formData.append('file', file);
                 if (this.altText) formData.append('alt_text', this.altText);
 
-                var csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
                 const resp = await fetch('/admin/media', {
                     method: 'POST',
                     headers: { 'X-CSRF-Token': csrfToken },
@@ -963,7 +963,7 @@ function mediaPicker() {
                 };
                 this.altText = '';
                 this.tab = 'library';
-                this.loadLibrary();
+                await this.loadLibrary();
             } catch (e) {
                 alert('Upload failed: ' + e.message);
             } finally {
@@ -990,8 +990,8 @@ function mediaPicker() {
             this.aiError = '';
             this.aiGenerated = null;
             try {
-                var csrfToken = document.querySelector('input[name="csrf_token"]').value;
-                var formData = new FormData();
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                const formData = new FormData();
                 formData.append('ai_image_prompt', this.aiPrompt.trim());
                 if (this.imageProvider) {
                     formData.append('image_provider', this.imageProvider);
@@ -1006,7 +1006,7 @@ function mediaPicker() {
                 });
                 // The handler returns JSON on success but may return HTML on
                 // error (via writeAIError). Check Content-Type to handle both.
-                var ct = resp.headers.get('Content-Type') || '';
+                const ct = resp.headers.get('Content-Type') || '';
                 if (ct.includes('application/json')) {
                     const data = await resp.json();
                     if (data.error) {
@@ -1017,11 +1017,11 @@ function mediaPicker() {
                     this.aiGenerated = data;
                     this.selected = data;
                     this.altText = data.alt_text || '';
-                    this.loadLibrary();
+                    await this.loadLibrary();
                 } else {
                     // HTML error fragment — extract text content.
-                    var html = await resp.text();
-                    var tmp = document.createElement('div');
+                    const html = await resp.text();
+                    const tmp = document.createElement('div');
                     tmp.innerHTML = html;
                     this.aiError = tmp.textContent.trim() || 'Image generation failed.';
                 }
@@ -1034,13 +1034,13 @@ function mediaPicker() {
 
         insert() {
             if (!this.selected || !this.editorInstance) return;
-            var alt = this.altText || this.selected.filename || 'image';
-            var url = this.selected.url;
-            var markdown = '![' + alt + '](' + url + ')';
+            const alt = this.altText || this.selected.filename || 'image';
+            const url = this.selected.url;
+            const markdown = '![' + alt + '](' + url + ')';
 
             // Insert at the current cursor position in EasyMDE.
-            var cm = this.editorInstance.codemirror;
-            var cursor = cm.getCursor();
+            const cm = this.editorInstance.codemirror;
+            const cursor = cm.getCursor();
             cm.replaceRange(markdown + '\n', cursor);
             cm.focus();
 
@@ -1051,13 +1051,13 @@ function mediaPicker() {
 
 // initMarkdownEditor creates and configures the EasyMDE instance on the body textarea.
 function initMarkdownEditor() {
-    var textarea = document.getElementById('body');
+    const textarea = document.getElementById('body');
     if (!textarea || textarea.dataset.editorInit === 'true') return;
 
     // Prevent double initialization.
     textarea.dataset.editorInit = 'true';
 
-    var editor = new EasyMDE({
+    const editor = new EasyMDE({
         element: textarea,
         spellChecker: false,
         autosave: { enabled: false },
@@ -1090,7 +1090,7 @@ function initMarkdownEditor() {
 
     // Keep the Alpine bodyEmpty state in sync with EasyMDE changes.
     editor.codemirror.on('change', function() {
-        var bodyField = document.querySelector('[x-ref="bodyField"]');
+        const bodyField = document.querySelector('[x-ref="bodyField"]');
         if (bodyField && bodyField.__x) {
             // Trigger Alpine reactivity.
         }
@@ -1098,9 +1098,9 @@ function initMarkdownEditor() {
         textarea.value = editor.value();
 
         // Update bodyEmpty state via Alpine's root data.
-        var rootEl = document.querySelector('[x-data]');
+        const rootEl = document.querySelector('[x-data]');
         if (rootEl && rootEl._x_dataStack) {
-            var data = rootEl._x_dataStack[0];
+            const data = rootEl._x_dataStack[0];
             if (data && typeof data.checkBody === 'function') {
                 data.bodyEmpty = editor.value().trim() === '';
             }

@@ -33,7 +33,7 @@ func TestHomepageDefault(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		// Restore published status for seeded content.
-		env.DB.Exec("UPDATE content SET status = 'published', published_at = NOW() WHERE status = 'draft'")
+		_, _ = env.DB.Exec("UPDATE content SET status = 'published', published_at = NOW() WHERE status = 'draft'")
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

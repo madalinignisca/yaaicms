@@ -32,7 +32,7 @@ func testValkeyClient(t *testing.T) *redis.Client {
 
 	ctx := context.Background()
 	if err := client.Ping(ctx).Err(); err != nil {
-		client.Close()
+		_ = client.Close()
 		t.Skipf("skipping integration test: Valkey not reachable: %v", err)
 	}
 
@@ -42,7 +42,7 @@ func testValkeyClient(t *testing.T) *redis.Client {
 		if len(keys) > 0 {
 			client.Del(ctx, keys...)
 		}
-		client.Close()
+		_ = client.Close()
 	})
 
 	return client
@@ -168,7 +168,7 @@ func TestSessionUpdate(t *testing.T) {
 		TwoFADone:   false,
 	}
 
-	store.Create(ctx, w, data)
+	_, _ = store.Create(ctx, w, data)
 	cookie := w.Result().Cookies()[0]
 
 	// Update: set 2FA done.
@@ -215,7 +215,7 @@ func TestSessionDestroy(t *testing.T) {
 		TenantRole:  "admin",
 	}
 
-	store.Create(ctx, w, data)
+	_, _ = store.Create(ctx, w, data)
 	cookie := w.Result().Cookies()[0]
 
 	// Destroy the session.
@@ -261,7 +261,7 @@ func TestSessionSecureCookie(t *testing.T) {
 	store := NewStore(client, true) // secure = true
 
 	w := httptest.NewRecorder()
-	store.Create(context.Background(), w, &Data{
+	_, _ = store.Create(context.Background(), w, &Data{
 		UserID: uuid.New(), Email: "secure@test.local",
 		DisplayName: "Secure", TenantRole: "admin",
 	})

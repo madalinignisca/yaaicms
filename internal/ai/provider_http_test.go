@@ -23,7 +23,7 @@ func newTestServer(t *testing.T, statusCode int, body []byte) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 }
 
@@ -96,7 +96,7 @@ func TestOpenAIGenerate_VerifiesRequestHeaders(t *testing.T) {
 		capturedBody, _ = io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(openAISuccessBody("ok"))
+		_, _ = w.Write(openAISuccessBody("ok"))
 	}))
 	defer srv.Close()
 
@@ -271,7 +271,7 @@ func TestClaudeGenerate_VerifiesRequestHeaders(t *testing.T) {
 		capturedBody, _ = io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(claudeSuccessBody("ok"))
+		_, _ = w.Write(claudeSuccessBody("ok"))
 	}))
 	defer srv.Close()
 
@@ -482,7 +482,7 @@ func TestGeminiGenerate_VerifiesRequestHeaders(t *testing.T) {
 		capturedPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(geminiSuccessBody("ok"))
+		_, _ = w.Write(geminiSuccessBody("ok"))
 	}))
 	defer srv.Close()
 
@@ -689,7 +689,7 @@ func TestMistralGenerate_VerifiesRequestHeaders(t *testing.T) {
 		capturedPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(openAISuccessBody("ok"))
+		_, _ = w.Write(openAISuccessBody("ok"))
 	}))
 	defer srv.Close()
 

@@ -633,12 +633,12 @@ func testDB(t *testing.T) *sql.DB {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Skipf("skipping integration test: DB not reachable: %v", err)
 	}
 
 	if err := database.Migrate(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Fatalf("failed to run migrations: %v", err)
 	}
 
@@ -647,9 +647,9 @@ func testDB(t *testing.T) *sql.DB {
 
 	// Ensure at least one user exists (seed may have been cleared by
 	// concurrent test packages).
-	database.Seed(db)
+	_ = database.Seed(db)
 
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	return db
 }
 
@@ -669,8 +669,8 @@ func cleanTemplates(t *testing.T, db *sql.DB, names ...string) {
 	t.Helper()
 	for _, name := range names {
 		// Deactivate first (Delete blocks active templates).
-		db.Exec("UPDATE templates SET is_active = FALSE WHERE name = $1", name)
-		db.Exec("DELETE FROM templates WHERE name = $1", name)
+		_, _ = db.Exec("UPDATE templates SET is_active = FALSE WHERE name = $1", name)
+		_, _ = db.Exec("DELETE FROM templates WHERE name = $1", name)
 	}
 }
 
@@ -678,7 +678,7 @@ func cleanTemplates(t *testing.T, db *sql.DB, names ...string) {
 func cleanContent(t *testing.T, db *sql.DB, slugs ...string) {
 	t.Helper()
 	for _, slug := range slugs {
-		db.Exec("DELETE FROM content WHERE slug = $1", slug)
+		_, _ = db.Exec("DELETE FROM content WHERE slug = $1", slug)
 	}
 }
 
@@ -1083,7 +1083,7 @@ func TestRenderPageNoActivePageTemplate(t *testing.T) {
 	t.Cleanup(func() {
 		// Re-activate the original page template if one existed.
 		if origActiveID != nil {
-			db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origActiveID)
+			_, _ = db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origActiveID)
 		}
 		cleanTemplates(t, db, headerName, footerName)
 	})
@@ -1133,7 +1133,7 @@ func TestRenderPostListNoActiveLoopTemplate(t *testing.T) {
 
 	t.Cleanup(func() {
 		if origActiveID != nil {
-			db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origActiveID)
+			_, _ = db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origActiveID)
 		}
 		cleanTemplates(t, db, headerName, footerName)
 	})
@@ -1263,10 +1263,10 @@ func TestRenderPageWithoutHeaderFooter(t *testing.T) {
 		cleanContent(t, db, slug)
 		cleanTemplates(t, db, pageName)
 		if origHeaderID != nil {
-			db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origHeaderID)
+			_, _ = db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origHeaderID)
 		}
 		if origFooterID != nil {
-			db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origFooterID)
+			_, _ = db.Exec("UPDATE templates SET is_active = TRUE WHERE id = $1", *origFooterID)
 		}
 	})
 

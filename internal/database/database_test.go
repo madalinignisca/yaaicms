@@ -32,7 +32,7 @@ func TestConnect(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: DB not available: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Verify connection pool settings.
 	if db.Stats().MaxOpenConnections != 25 {
@@ -57,7 +57,7 @@ func TestMigrate(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: DB not available: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Migrate should be idempotent — running twice shouldn't error.
 	if err := Migrate(db); err != nil {
@@ -85,7 +85,7 @@ func TestMigrateIdempotent(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: DB not available: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Run migrations twice — should not error.
 	if err := Migrate(db); err != nil {

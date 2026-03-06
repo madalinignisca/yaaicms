@@ -51,7 +51,7 @@ func TestLogger(t *testing.T) {
 	t.Run("handles write without explicit WriteHeader", func(t *testing.T) {
 		inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Write body without calling WriteHeader — Go defaults to 200.
-			w.Write([]byte("hello"))
+			_, _ = w.Write([]byte("hello"))
 		})
 
 		handler := Logger(inner)
@@ -143,7 +143,7 @@ func TestResponseWriter(t *testing.T) {
 		rw := &responseWriter{ResponseWriter: rr, statusCode: http.StatusOK}
 
 		rw.WriteHeader(http.StatusCreated)
-		rw.Write([]byte("created"))
+		_, _ = rw.Write([]byte("created"))
 
 		if rw.statusCode != http.StatusCreated {
 			t.Errorf("statusCode: got %d, want 201", rw.statusCode)

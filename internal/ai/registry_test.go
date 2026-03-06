@@ -156,8 +156,8 @@ func TestRegistrySetActive(t *testing.T) {
 			active:    "a",
 		}
 
-		reg.SetActive("b")
-		reg.SetActive("a")
+		_ = reg.SetActive("b")
+		_ = reg.SetActive("a")
 
 		if reg.ActiveName() != "a" {
 			t.Errorf("ActiveName: got %q, want %q", reg.ActiveName(), "a")
@@ -313,7 +313,7 @@ func TestRegistryConcurrency(t *testing.T) {
 				if i%2 == 0 {
 					name = "b"
 				}
-				reg.SetActive(name)
+				_ = reg.SetActive(name)
 			}(i)
 		}
 

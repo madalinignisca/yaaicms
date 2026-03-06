@@ -48,20 +48,20 @@ func testDB(t *testing.T) *sql.DB {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Skipf("skipping integration test: DB not reachable: %v", err)
 	}
 
 	// Run migrations to ensure the schema is current.
 	if err := database.Migrate(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Fatalf("failed to run migrations: %v", err)
 	}
 
 	// Downgrade goose global state.
 	goose.SetBaseFS(nil)
 
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	return db
 }
 
@@ -69,7 +69,7 @@ func testDB(t *testing.T) *sql.DB {
 func cleanUsers(t *testing.T, db *sql.DB, emails ...string) {
 	t.Helper()
 	for _, email := range emails {
-		db.Exec("DELETE FROM users WHERE email = $1", email)
+		_, _ = db.Exec("DELETE FROM users WHERE email = $1", email)
 	}
 }
 
@@ -77,7 +77,7 @@ func cleanUsers(t *testing.T, db *sql.DB, emails ...string) {
 func cleanContent(t *testing.T, db *sql.DB, slugs ...string) {
 	t.Helper()
 	for _, slug := range slugs {
-		db.Exec("DELETE FROM content WHERE slug = $1", slug)
+		_, _ = db.Exec("DELETE FROM content WHERE slug = $1", slug)
 	}
 }
 
@@ -85,7 +85,7 @@ func cleanContent(t *testing.T, db *sql.DB, slugs ...string) {
 func cleanTemplates(t *testing.T, db *sql.DB, names ...string) {
 	t.Helper()
 	for _, name := range names {
-		db.Exec("DELETE FROM templates WHERE name = $1", name)
+		_, _ = db.Exec("DELETE FROM templates WHERE name = $1", name)
 	}
 }
 
@@ -93,6 +93,6 @@ func cleanTemplates(t *testing.T, db *sql.DB, names ...string) {
 func cleanMediaByKey(t *testing.T, db *sql.DB, s3keys ...string) {
 	t.Helper()
 	for _, key := range s3keys {
-		db.Exec("DELETE FROM media WHERE s3_key = $1", key)
+		_, _ = db.Exec("DELETE FROM media WHERE s3_key = $1", key)
 	}
 }

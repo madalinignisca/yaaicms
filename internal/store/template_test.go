@@ -169,7 +169,7 @@ func TestTemplateStoreDeleteActiveBlocked(t *testing.T) {
 	name := "Active No Delete " + uuid.NewString()[:8]
 	t.Cleanup(func() {
 		// Deactivate so cleanup can delete it.
-		db.Exec("UPDATE templates SET is_active = FALSE WHERE name = $1", name)
+		_, _ = db.Exec("UPDATE templates SET is_active = FALSE WHERE name = $1", name)
 		cleanTemplates(t, db, name)
 	})
 
@@ -178,7 +178,7 @@ func TestTemplateStoreDeleteActiveBlocked(t *testing.T) {
 		HTMLContent: "<header>nodelet</header>",
 	})
 
-	s.Activate(testTemplateTenantID, created.ID)
+	_ = s.Activate(testTemplateTenantID, created.ID)
 
 	// Delete active — should fail.
 	err := s.Delete(created.ID)
@@ -195,7 +195,7 @@ func TestTemplateStoreList(t *testing.T) {
 	name := "List Test Template " + uuid.NewString()[:8]
 	t.Cleanup(func() { cleanTemplates(t, db, name) })
 
-	s.Create(testTemplateTenantID, &models.Template{
+	_, _ = s.Create(testTemplateTenantID, &models.Template{
 		Name:        name,
 		Type:        models.TemplateTypeHeader,
 		HTMLContent: "<header>list test</header>",
