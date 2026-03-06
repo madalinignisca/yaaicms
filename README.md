@@ -63,7 +63,7 @@ Our paid partners receive:
 * **SLA-Backed Response:** Guaranteed response times for mission-critical issues.
 * **Architectural Consulting:** Expert guidance on scaling Yaaicms for high-traffic infrastructure.
 
-**[Inquire about Support Contracts](mailto:your-email@example.com)**
+**[Inquire about Support Contracts](mailto:hi@madalin.me)**
 
 ---
 
@@ -75,6 +75,6 @@ This project is licensed under a **Proprietary Commercial License**.
 * **Production/Business Use:** A paid license is mandatory prior to deployment.
 * **Redistribution:** Prohibited without an authorized partner agreement.
 
-See the [LICENSE](https://www.google.com/search?q=LICENSE) file for the full legal text.
+See the [LICENSE](https://github.com/madalinignisca/yaaicms/blob/main/LICENSE) file for the full legal text.
 
 **Copyright © 2026 Madalin Ignisca. All Rights Reserved.**
