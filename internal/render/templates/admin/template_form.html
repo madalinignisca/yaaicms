@@ -206,7 +206,7 @@
                     <p class="text-sm text-gray-400 text-center p-4">Click "Refresh Preview" to see your template rendered with sample data.</p>
                 </template>
                 <template x-if="previewHTML">
-                    <iframe :srcdoc="previewHTML" class="w-full h-[500px] border-0 rounded-md"></iframe>
+                    <iframe :srcdoc="previewHTML" sandbox="allow-scripts" class="w-full h-[500px] border-0 rounded-md"></iframe>
                 </template>
             </div>
         </div>
@@ -331,7 +331,7 @@ function templateEditor() {
             const el = document.querySelector('[hx-headers]');
             if (!el) return '';
             try { return JSON.parse(el.getAttribute('hx-headers'))['X-CSRF-Token']; }
-            catch { return ''; }
+            catch (e) { console.warn('Failed to parse CSRF token:', e); return ''; }
         },
 
         async loadPreviewContent() {
