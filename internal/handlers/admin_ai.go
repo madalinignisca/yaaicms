@@ -606,13 +606,13 @@ func (a *Admin) AISetProvider(w http.ResponseWriter, r *http.Request) {
 
 // AIProviderStatus returns the current provider selector fragment.
 // Used by the content form to load the initial state of the provider dropdown.
-func (a *Admin) AIProviderStatus(w http.ResponseWriter, r *http.Request) {
+func (a *Admin) AIProviderStatus(w http.ResponseWriter, _ *http.Request) {
 	a.writeProviderSelector(w, a.aiRegistry.ActiveName())
 }
 
 // AIImageProviders returns a JSON list of providers that support image
 // generation. Used by the frontend to populate image provider selectors.
-func (a *Admin) AIImageProviders(w http.ResponseWriter, r *http.Request) {
+func (a *Admin) AIImageProviders(w http.ResponseWriter, _ *http.Request) {
 	names := a.aiRegistry.ImageProviders()
 
 	type providerInfo struct {

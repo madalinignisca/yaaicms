@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -40,7 +41,7 @@ func scanTenant(scanner interface{ Scan(...any) error }) (*models.Tenant, error)
 func (s *TenantStore) FindBySubdomain(subdomain string) (*models.Tenant, error) {
 	row := s.db.QueryRow(`SELECT `+tenantColumns+` FROM tenants WHERE subdomain = $1`, subdomain)
 	t, err := scanTenant(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -53,7 +54,7 @@ func (s *TenantStore) FindBySubdomain(subdomain string) (*models.Tenant, error) 
 func (s *TenantStore) FindByID(id uuid.UUID) (*models.Tenant, error) {
 	row := s.db.QueryRow(`SELECT `+tenantColumns+` FROM tenants WHERE id = $1`, id)
 	t, err := scanTenant(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

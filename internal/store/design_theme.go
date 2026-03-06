@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -64,7 +65,7 @@ func (s *DesignThemeStore) List(tenantID uuid.UUID) ([]models.DesignTheme, error
 func (s *DesignThemeStore) FindByID(id uuid.UUID) (*models.DesignTheme, error) {
 	row := s.db.QueryRow(`SELECT `+themeColumns+` FROM design_themes WHERE id = $1`, id)
 	t, err := scanTheme(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -77,7 +78,7 @@ func (s *DesignThemeStore) FindByID(id uuid.UUID) (*models.DesignTheme, error) {
 func (s *DesignThemeStore) FindActive(tenantID uuid.UUID) (*models.DesignTheme, error) {
 	row := s.db.QueryRow(`SELECT `+themeColumns+` FROM design_themes WHERE is_active = TRUE AND tenant_id = $1 LIMIT 1`, tenantID)
 	t, err := scanTheme(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

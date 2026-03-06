@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh>
 // All rights reserved. See LICENSE for details.
 
-// page.go provides a Valkey-backed full-page HTML cache (L2).
+// Package cache provides a Valkey-backed full-page HTML cache (L2).
 // When a public page is rendered by the template engine, the resulting HTML
 // is stored in Valkey so subsequent requests skip the DB query and template
 // execution entirely.

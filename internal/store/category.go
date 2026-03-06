@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -131,7 +132,7 @@ func flattenTree(cats []models.Category, result *[]models.Category) {
 func (s *CategoryStore) FindByID(id uuid.UUID) (*models.Category, error) {
 	row := s.db.QueryRow(`SELECT `+categoryColumns+` FROM categories WHERE id = $1`, id)
 	c, err := scanCategory(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

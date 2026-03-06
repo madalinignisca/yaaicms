@@ -406,12 +406,12 @@ func (e *Engine) compileAndRender(id string, version int, tmplContent string, da
 // rendered HTML. It injects before </head> when present (standard HTML
 // documents), otherwise prepends to the output (template fragments).
 func injectContentCSS(rendered []byte) []byte {
-	html := string(rendered)
-	if idx := strings.Index(strings.ToLower(html), "</head>"); idx != -1 {
-		return []byte(html[:idx] + contentStyleTag + html[idx:])
+	htmlContent := string(rendered)
+	if idx := strings.Index(strings.ToLower(htmlContent), "</head>"); idx != -1 {
+		return []byte(htmlContent[:idx] + contentStyleTag + htmlContent[idx:])
 	}
 	// No </head> — prepend the style block.
-	return []byte(contentStyleTag + html)
+	return []byte(contentStyleTag + htmlContent)
 }
 
 // injectSocialMeta inserts Open Graph, Twitter Card, and standard SEO meta

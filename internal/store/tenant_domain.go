@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,7 +42,7 @@ func scanTenantDomain(scanner interface{ Scan(...any) error }) (*models.TenantDo
 func (s *TenantDomainStore) FindByDomain(domain string) (*models.TenantDomain, error) {
 	row := s.db.QueryRow(`SELECT `+tenantDomainColumns+` FROM tenant_domains WHERE domain = $1`, domain)
 	d, err := scanTenantDomain(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -68,7 +69,7 @@ func (s *TenantDomainStore) FindByDomainWithTenant(domain string) (*models.Tenan
 		&d.ID, &d.TenantID, &d.Domain, &d.Status, &d.IsPrimary, &d.VerifiedAt, &d.CreatedAt, &d.UpdatedAt,
 		&t.ID, &t.Name, &t.Subdomain, &t.IsActive, &t.CreatedAt, &t.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, nil
 	}
 	if err != nil {
@@ -181,7 +182,7 @@ func (s *TenantDomainStore) Delete(id uuid.UUID) error {
 func (s *TenantDomainStore) FindByID(id uuid.UUID) (*models.TenantDomain, error) {
 	row := s.db.QueryRow(`SELECT `+tenantDomainColumns+` FROM tenant_domains WHERE id = $1`, id)
 	d, err := scanTenantDomain(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -230,7 +231,7 @@ func (s *TenantDomainStore) UnsetPrimary(tenantID uuid.UUID) error {
 func (s *TenantDomainStore) FindPrimaryByTenantID(tenantID uuid.UUID) (*models.TenantDomain, error) {
 	row := s.db.QueryRow(`SELECT `+tenantDomainColumns+` FROM tenant_domains WHERE tenant_id = $1 AND is_primary = true`, tenantID)
 	d, err := scanTenantDomain(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

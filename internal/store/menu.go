@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -64,7 +65,7 @@ func (s *MenuStore) FindByLocation(tenantID uuid.UUID, location string) (*models
 		SELECT id, tenant_id, location, created_at, updated_at
 		FROM menus WHERE tenant_id = $1 AND location = $2
 	`, tenantID, location).Scan(&m.ID, &m.TenantID, &m.Location, &m.CreatedAt, &m.UpdatedAt)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -157,7 +158,7 @@ func buildMenuTree(flat []models.MenuItem, parentID *uuid.UUID) []models.MenuIte
 func (s *MenuStore) FindItemByID(id uuid.UUID) (*models.MenuItem, error) {
 	row := s.db.QueryRow(`SELECT `+menuItemColumns+` FROM menu_items WHERE id = $1`, id)
 	mi, err := scanMenuItem(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -264,7 +265,7 @@ func (s *MenuStore) FindMenuByID(id uuid.UUID) (*models.Menu, error) {
 		SELECT id, tenant_id, location, created_at, updated_at
 		FROM menus WHERE id = $1
 	`, id).Scan(&m.ID, &m.TenantID, &m.Location, &m.CreatedAt, &m.UpdatedAt)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

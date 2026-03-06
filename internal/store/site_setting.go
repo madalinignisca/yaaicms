@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -46,7 +47,7 @@ func (s *SiteSettingStore) All(tenantID uuid.UUID) (models.SiteSettings, error) 
 func (s *SiteSettingStore) Get(tenantID uuid.UUID, key, fallback string) (string, error) {
 	var val string
 	err := s.db.QueryRow(`SELECT value FROM site_settings WHERE key = $1 AND tenant_id = $2`, key, tenantID).Scan(&val)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return fallback, nil
 	}
 	if err != nil {

@@ -8,6 +8,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -49,7 +50,7 @@ func scanUser(scanner interface{ Scan(...any) error }) (*models.User, error) {
 func (s *UserStore) FindByEmail(email string) (*models.User, error) {
 	row := s.db.QueryRow(`SELECT `+userColumns+` FROM users WHERE email = $1`, email)
 	u, err := scanUser(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -62,7 +63,7 @@ func (s *UserStore) FindByEmail(email string) (*models.User, error) {
 func (s *UserStore) FindByID(id uuid.UUID) (*models.User, error) {
 	row := s.db.QueryRow(`SELECT `+userColumns+` FROM users WHERE id = $1`, id)
 	u, err := scanUser(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -208,7 +209,7 @@ func (s *UserStore) GetTenantRole(userID, tenantID uuid.UUID) (models.Role, erro
 	err := s.db.QueryRow(`
 		SELECT role FROM user_tenants WHERE user_id = $1 AND tenant_id = $2
 	`, userID, tenantID).Scan(&role)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
 	if err != nil {

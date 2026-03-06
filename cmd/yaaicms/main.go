@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -209,7 +210,7 @@ func main() {
 	// Start the server in a goroutine so we can listen for shutdown signals.
 	go func() {
 		slog.Info("server starting", "addr", cfg.Addr())
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server failed to start", "error", err)
 			os.Exit(1)
 		}

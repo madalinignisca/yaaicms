@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Vlah Software House SRL <contact@vlah.sh>
 // All rights reserved. See LICENSE for details.
 
-// cache_log.go records cache invalidation events in the database for
+// Package store records cache invalidation events in the database for
 // audit and debugging purposes. Each entry captures what was invalidated,
 // when, and why (create/update/delete).
 package store
