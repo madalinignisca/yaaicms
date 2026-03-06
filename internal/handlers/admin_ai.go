@@ -930,7 +930,7 @@ func (a *Admin) AITemplateGenerate(w http.ResponseWriter, r *http.Request) {
 		}
 		rendered, err := a.engine.ValidateAndRender(htmlContent, previewData)
 		if err == nil {
-			previewHTML = string(rendered)
+			previewHTML = string(wrapPreviewHTML(rendered))
 		}
 	}
 
@@ -1234,7 +1234,7 @@ func (a *Admin) AIRestylePreview(w http.ResponseWriter, r *http.Request) {
 
 		result, err := a.engine.ValidateAndRender(req.PageHTML, pageData)
 		if err == nil {
-			resp.PagePreview = string(result)
+			resp.PagePreview = string(wrapPreviewHTML(result))
 		}
 	}
 
@@ -1259,7 +1259,7 @@ func (a *Admin) AIRestylePreview(w http.ResponseWriter, r *http.Request) {
 
 		result, err := a.engine.ValidateAndRender(req.ArticleLoopHTML, loopData)
 		if err == nil {
-			resp.ArticleLoopPreview = string(result)
+			resp.ArticleLoopPreview = string(wrapPreviewHTML(result))
 		}
 	}
 
@@ -1509,6 +1509,27 @@ func buildSrcsetForPreview(storageClient *storage.Client, variants []models.Medi
 		parts = append(parts, fmt.Sprintf("%s %dw", url, v.Width))
 	}
 	return strings.Join(parts, ", ")
+}
+
+// wrapPreviewHTML ensures the rendered preview HTML includes TailwindCSS CDN
+// so the preview iframe always has styling. Handles three cases:
+//  1. Already has TailwindCSS → returns as-is
+//  2. Has <head> but no TailwindCSS → injects CDN before </head>
+//  3. Fragment (header/footer) with no document structure → wraps in full HTML document
+func wrapPreviewHTML(rendered []byte) []byte {
+	const tailwindCDN = `<script src="https://cdn.tailwindcss.com"></script>`
+
+	s := string(rendered)
+
+	if strings.Contains(strings.ToLower(s), "tailwindcss") {
+		return rendered
+	}
+
+	if i := strings.Index(strings.ToLower(s), "</head>"); i != -1 {
+		return []byte(s[:i] + tailwindCDN + "\n" + s[i:])
+	}
+
+	return []byte(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + tailwindCDN + `</head><body>` + s + `</body></html>`)
 }
 
 // buildTemplateSystemPrompt creates a system prompt that instructs the LLM

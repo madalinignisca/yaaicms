@@ -1117,7 +1117,7 @@ func (a *Admin) TemplatePreview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(result)
+	_, _ = w.Write(wrapPreviewHTML(result))
 }
 
 // TemplateRevisionRestore restores a template to the state captured in a revision.
