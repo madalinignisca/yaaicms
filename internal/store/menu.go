@@ -16,7 +16,7 @@ import (
 )
 
 // MenuLocations defines the predefined menu locations.
-var MenuLocations = []string{"main", "footer", "footer_legal"}
+var MenuLocations = []string{"main", "footer", "footer_legal"} //nolint:gochecknoglobals // constant configuration
 
 // MenuStore manages menus and menu items in the database.
 type MenuStore struct {

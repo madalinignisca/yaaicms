@@ -49,7 +49,7 @@ type Renderer struct {
 
 // standaloneTemplates lists templates that render as full HTML pages
 // without the base layout (they have their own <html>, <head>, etc.).
-var standaloneTemplates = map[string]bool{
+var standaloneTemplates = map[string]bool{ //nolint:gochecknoglobals // constant lookup table
 	"login":         true,
 	"2fa_setup":     true,
 	"2fa_verify":    true,
