@@ -78,7 +78,7 @@ func (s *UserStore) List() ([]models.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var users []models.User
 	for rows.Next() {
@@ -105,7 +105,7 @@ func (s *UserStore) ListByTenant(tenantID uuid.UUID) ([]UserWithRole, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list users by tenant: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []UserWithRole
 	for rows.Next() {
@@ -183,7 +183,7 @@ func (s *UserStore) GetTenants(userID uuid.UUID) ([]models.TenantMembership, err
 	if err != nil {
 		return nil, fmt.Errorf("get user tenants: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var memberships []models.TenantMembership
 	for rows.Next() {

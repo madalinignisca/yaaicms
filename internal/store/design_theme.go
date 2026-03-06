@@ -48,7 +48,7 @@ func (s *DesignThemeStore) List(tenantID uuid.UUID) ([]models.DesignTheme, error
 	if err != nil {
 		return nil, fmt.Errorf("list design themes: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.DesignTheme
 	for rows.Next() {
@@ -124,7 +124,7 @@ func (s *DesignThemeStore) Activate(tenantID uuid.UUID, id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Deactivate all themes for this tenant.
 	if _, err := tx.Exec(`UPDATE design_themes SET is_active = FALSE WHERE is_active = TRUE AND tenant_id = $1`, tenantID); err != nil {

@@ -69,7 +69,7 @@ func (s *TenantStore) List() ([]models.Tenant, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list tenants: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tenants []models.Tenant
 	for rows.Next() {

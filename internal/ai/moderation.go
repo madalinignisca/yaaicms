@@ -77,7 +77,7 @@ func (m *openAIModerator) CheckSafety(ctx context.Context, text string) (*Modera
 	if err != nil {
 		return nil, fmt.Errorf("moderation http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -167,7 +167,7 @@ func (m *mistralModerator) CheckSafety(ctx context.Context, text string) (*Moder
 	if err != nil {
 		return nil, fmt.Errorf("mistral moderation http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

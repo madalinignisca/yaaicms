@@ -87,7 +87,7 @@ func (s *TenantDomainStore) ListByTenant(tenantID uuid.UUID) ([]models.TenantDom
 	if err != nil {
 		return nil, fmt.Errorf("list tenant domains: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var domains []models.TenantDomain
 	for rows.Next() {
@@ -109,7 +109,7 @@ func (s *TenantDomainStore) ListByStatus(status string) ([]models.TenantDomain, 
 	if err != nil {
 		return nil, fmt.Errorf("list tenant domains by status: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var domains []models.TenantDomain
 	for rows.Next() {
@@ -198,7 +198,7 @@ func (s *TenantDomainStore) SetPrimary(tenantID, domainID uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("begin set primary tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Unset any existing primary for this tenant.
 	if _, err := tx.Exec(`UPDATE tenant_domains SET is_primary = false WHERE tenant_id = $1 AND is_primary = true`, tenantID); err != nil {

@@ -96,7 +96,7 @@ Rules:
 	)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(fragment))
+	_, _ = w.Write([]byte(fragment))
 }
 
 // AIGenerateImage generates an image using the selected AI provider's image
@@ -211,7 +211,7 @@ func (a *Admin) AIGenerateImage(w http.ResponseWriter, r *http.Request) {
 	// otherwise return an HTML fragment (used by the featured image HTMX flow).
 	if strings.Contains(r.Header.Get("Accept"), "application/json") {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{
 			"id":        created.ID.String(),
 			"url":       imgURL,
 			"thumb_url": thumbURL,
@@ -240,7 +240,7 @@ func (a *Admin) AIGenerateImage(w http.ResponseWriter, r *http.Request) {
 	)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(fragment))
+	_, _ = w.Write([]byte(fragment))
 }
 
 // AISuggestTitle generates title suggestions based on the content body.
@@ -293,7 +293,7 @@ numbered 1-5. Keep titles under 70 characters. Do not include any other text or 
 	sb.WriteString(`</div>`)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(sb.String()))
+	_, _ = w.Write([]byte(sb.String()))
 }
 
 // AIGenerateExcerpt creates a concise excerpt from the content body.
@@ -340,7 +340,7 @@ of the content and entice readers to click. Output ONLY the excerpt text, nothin
 	)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(fragment))
+	_, _ = w.Write([]byte(fragment))
 }
 
 // AISEOMetadata generates SEO meta description and keywords from the content.
@@ -424,7 +424,7 @@ Do not include any other text.`
 	sb.WriteString(`</div>`)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(sb.String()))
+	_, _ = w.Write([]byte(sb.String()))
 }
 
 // AIRewrite rewrites the content body in a specified tone.
@@ -504,7 +504,7 @@ Output ONLY the rewritten content, nothing else.`, toneDesc)
 	)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(fragment))
+	_, _ = w.Write([]byte(fragment))
 }
 
 // AIExtractTags extracts relevant tags/categories from the content.
@@ -560,7 +560,7 @@ Output ONLY the tags as a comma-separated list on a single line. No other text.`
 	sb.WriteString(`<p class="text-xs text-gray-400 mt-1.5">Click tags to add them to keywords.</p>`)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(sb.String()))
+	_, _ = w.Write([]byte(sb.String()))
 }
 
 // --- Provider Switching ---
@@ -634,7 +634,7 @@ func (a *Admin) AIImageProviders(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(providers)
+	_ = json.NewEncoder(w).Encode(providers)
 }
 
 // refreshAIConfig updates the cached AIConfig after a provider switch.
@@ -676,7 +676,7 @@ func (a *Admin) writeProviderSelector(w http.ResponseWriter, active string) {
 	sb.WriteString(`</select>`)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(sb.String()))
+	_, _ = w.Write([]byte(sb.String()))
 }
 
 // --- Helper functions ---
@@ -709,13 +709,13 @@ func (a *Admin) checkPromptSafety(w http.ResponseWriter, r *http.Request, prompt
 // writeAIError writes an error message HTML fragment.
 func writeAIError(w http.ResponseWriter, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<p class="text-xs text-red-600 bg-red-50 rounded p-2">%s</p>`, html.EscapeString(msg))
+	_, _ = fmt.Fprintf(w, `<p class="text-xs text-red-600 bg-red-50 rounded p-2">%s</p>`, html.EscapeString(msg))
 }
 
 // writeAIResult writes a plain text result as an HTML fragment.
 func writeAIResult(w http.ResponseWriter, result string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<p class="text-xs text-gray-700 bg-gray-50 rounded p-2 whitespace-pre-wrap">%s</p>`,
+	_, _ = fmt.Fprintf(w, `<p class="text-xs text-gray-700 bg-gray-50 rounded p-2 whitespace-pre-wrap">%s</p>`,
 		html.EscapeString(strings.TrimSpace(result)))
 }
 
@@ -1315,7 +1315,7 @@ func (a *Admin) AIPreviewContentList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 }
 
 // buildRealPreviewData builds template preview data from real content.
@@ -1851,7 +1851,7 @@ func extractHTMLFromResponse(response string) string {
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // quoteJSString produces a JavaScript string literal safe for embedding in

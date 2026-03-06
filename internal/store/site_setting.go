@@ -30,7 +30,7 @@ func (s *SiteSettingStore) All(tenantID uuid.UUID) (models.SiteSettings, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	settings := make(models.SiteSettings)
 	for rows.Next() {
@@ -77,7 +77,7 @@ func (s *SiteSettingStore) SetMany(tenantID uuid.UUID, settings map[string]strin
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO site_settings (tenant_id, key, value, updated_at)
@@ -87,7 +87,7 @@ func (s *SiteSettingStore) SetMany(tenantID uuid.UUID, settings map[string]strin
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	now := time.Now()
 	for k, v := range settings {

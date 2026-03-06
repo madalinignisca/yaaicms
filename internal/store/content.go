@@ -56,7 +56,7 @@ func (s *ContentStore) ListByType(tenantID uuid.UUID, contentType models.Content
 	if err != nil {
 		return nil, fmt.Errorf("list content by type: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Content
 	for rows.Next() {
@@ -169,7 +169,7 @@ func (s *ContentStore) ListPublishedByType(tenantID uuid.UUID, contentType model
 	if err != nil {
 		return nil, fmt.Errorf("list published content: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Content
 	for rows.Next() {

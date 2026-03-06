@@ -240,5 +240,5 @@ func New(sessionStore *session.Store, admin *handlers.Admin, auth *handlers.Auth
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"ok"}`))
+	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }

@@ -94,7 +94,7 @@ func (s *MenuStore) AllWithItems(tenantID uuid.UUID) ([]models.Menu, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list menus: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var menus []models.Menu
 	for rows.Next() {
@@ -129,7 +129,7 @@ func (s *MenuStore) listItems(menuID uuid.UUID) ([]models.MenuItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list menu items: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.MenuItem
 	for rows.Next() {
@@ -220,7 +220,7 @@ func (s *MenuStore) ReorderItems(menuID uuid.UUID, items []MenuReorderItem) erro
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.Prepare(`
 		UPDATE menu_items SET parent_id = $1, sort_order = $2, updated_at = $3
@@ -228,7 +228,7 @@ func (s *MenuStore) ReorderItems(menuID uuid.UUID, items []MenuReorderItem) erro
 	if err != nil {
 		return fmt.Errorf("prepare reorder: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	now := time.Now()
 	for _, item := range items {

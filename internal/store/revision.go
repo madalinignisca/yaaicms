@@ -69,7 +69,7 @@ func (s *RevisionStore) ListByContentID(contentID uuid.UUID) ([]*models.ContentR
 	if err != nil {
 		return nil, fmt.Errorf("list revisions: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var revisions []*models.ContentRevision
 	for rows.Next() {

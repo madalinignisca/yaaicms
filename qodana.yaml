@@ -22,3 +22,32 @@ exclude:
       - deploy
       - work
       - e2e
+  # False positives: HTMX (hx-*) and AlpineJS (x-*, @click, :class) attributes
+  # are not standard HTML — Qodana's XML/HTML parser doesn't know them.
+  - name: XmlUnboundNsPrefix
+  - name: HtmlUnknownAttribute
+  - name: HtmlUnknownTarget
+  - name: HtmlUnknownTag
+  - name: Annotator
+  - name: RequiredAttributes
+  # Spell-checking noise on Go identifiers, template variables, CSS classes.
+  - name: SpellCheckingInspection
+  - name: GrazieInspection
+  - name: GrazieStyle
+  # JS inspections that can't resolve context in Go html/template fragments.
+  - name: JSUnresolvedReference
+  - name: JSUnusedGlobalSymbols
+  - name: JSUnresolvedLibraryURL
+  - name: JSUnusedLocalSymbols
+  # Go module dependency resolution doesn't work inside Qodana's Docker container.
+  - name: VgoUnusedDependency
+  # npm/package.json noise from Playwright dev dependency.
+  - name: NpmUsedModulesInstalled
+  - name: PackageJsonMismatchedDependency
+  # CSS class usage can't be resolved across Go templates + Tailwind.
+  - name: CssUnusedSymbol
+  - name: CssInvalidAtRule
+  # YAML schema warning for GitHub Actions (non-standard Qodana fields).
+  - name: YAMLSchemaValidation
+  # Duplicate action attributes from HTMX hx-post overriding form action.
+  - name: XmlHighlighting

@@ -292,6 +292,6 @@ func (a *Auth) TwoFAVerifySubmit(w http.ResponseWriter, r *http.Request) {
 
 // Logout destroys the session and redirects to the login page.
 func (a *Auth) Logout(w http.ResponseWriter, r *http.Request) {
-	a.sessions.Destroy(r.Context(), w, r)
+	_ = a.sessions.Destroy(r.Context(), w, r)
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }

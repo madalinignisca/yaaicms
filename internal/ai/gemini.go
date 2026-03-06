@@ -76,7 +76,7 @@ func (p *geminiProvider) GenerateWithModel(ctx context.Context, model, systemPro
 	if err != nil {
 		return "", fmt.Errorf("gemini http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -144,7 +144,7 @@ func (p *geminiProvider) GenerateImage(ctx context.Context, prompt string) ([]by
 	if err != nil {
 		return nil, "", fmt.Errorf("gemini image http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

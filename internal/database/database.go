@@ -36,7 +36,7 @@ func Connect(dsn string) (*sql.DB, error) {
 
 	// Verify the connection is alive.
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("database ping: %w", err)
 	}
 

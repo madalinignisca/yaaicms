@@ -66,7 +66,7 @@ func (s *TemplateRevisionStore) ListByTemplateID(templateID uuid.UUID) ([]*model
 	if err != nil {
 		return nil, fmt.Errorf("list template revisions: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var revisions []*models.TemplateRevision
 	for rows.Next() {

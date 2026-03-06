@@ -55,7 +55,7 @@ func (s *CategoryStore) List(tenantID uuid.UUID) ([]models.Category, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list categories: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Category
 	for rows.Next() {
@@ -192,7 +192,7 @@ func (s *CategoryStore) Reorder(items []ReorderItem) error {
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.Prepare(`
 		UPDATE categories SET parent_id = $1, sort_order = $2, updated_at = $3
@@ -200,7 +200,7 @@ func (s *CategoryStore) Reorder(items []ReorderItem) error {
 	if err != nil {
 		return fmt.Errorf("prepare reorder: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	now := time.Now()
 	for _, item := range items {

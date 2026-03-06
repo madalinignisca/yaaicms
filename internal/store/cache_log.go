@@ -61,7 +61,7 @@ func (s *CacheLogStore) RecentEntries(tenantID uuid.UUID, limit int) ([]CacheLog
 	if err != nil {
 		return nil, fmt.Errorf("query cache log: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var entries []CacheLogEntry
 	for rows.Next() {

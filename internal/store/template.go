@@ -35,7 +35,7 @@ func (s *TemplateStore) List(tenantID uuid.UUID) ([]models.Template, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list templates: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var templates []models.Template
 	for rows.Next() {
@@ -128,7 +128,7 @@ func (s *TemplateStore) Activate(tenantID uuid.UUID, id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Get the template's type.
 	var tmplType string

@@ -85,7 +85,7 @@ func (s *MediaStore) List(tenantID uuid.UUID, limit, offset int) ([]models.Media
 	if err != nil {
 		return nil, fmt.Errorf("list media: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Media
 	for rows.Next() {
@@ -149,7 +149,7 @@ func (s *MediaStore) FindByS3Keys(keys []string) (map[string]*models.Media, erro
 	if err != nil {
 		return nil, fmt.Errorf("find media by s3 keys: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[string]*models.Media)
 	for rows.Next() {

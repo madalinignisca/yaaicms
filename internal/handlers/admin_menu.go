@@ -198,7 +198,7 @@ func (a *Admin) MenuItemReorder(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"ok":true}`))
+	_, _ = w.Write([]byte(`{"ok":true}`))
 }
 
 // MenuContentList returns a JSON list of published pages and posts for
@@ -226,5 +226,5 @@ func (a *Admin) MenuContentList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(options)
+	_ = json.NewEncoder(w).Encode(options)
 }
