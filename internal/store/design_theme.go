@@ -155,8 +155,8 @@ func (s *DesignThemeStore) Deactivate(id uuid.UUID) error {
 }
 
 // Delete removes a design theme. Cannot delete the active theme.
-func (s *DesignThemeStore) Delete(id uuid.UUID) error {
-	result, err := s.db.Exec(`DELETE FROM design_themes WHERE id = $1 AND is_active = FALSE`, id)
+func (s *DesignThemeStore) Delete(tenantID, id uuid.UUID) error {
+	result, err := s.db.Exec(`DELETE FROM design_themes WHERE id = $1 AND tenant_id = $2 AND is_active = FALSE`, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("delete design theme: %w", err)
 	}

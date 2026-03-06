@@ -1084,6 +1084,7 @@ func (a *Admin) AIThemeDeactivate(w http.ResponseWriter, r *http.Request) {
 
 // AIThemeDelete removes a design theme (cannot delete active).
 func (a *Admin) AIThemeDelete(w http.ResponseWriter, r *http.Request) {
+	sess := middleware.SessionFromCtx(r.Context())
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -1091,7 +1092,7 @@ func (a *Admin) AIThemeDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.themeStore.Delete(id); err != nil {
+	if err := a.themeStore.Delete(sess.TenantID, id); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}

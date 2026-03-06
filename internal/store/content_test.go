@@ -224,7 +224,7 @@ func TestContentStoreDelete(t *testing.T) {
 		Body: "body", Status: models.ContentStatusDraft, AuthorID: authorID,
 	})
 
-	if err := s.Delete(created.ID); err != nil {
+	if err := s.Delete(testContentTenantID, created.ID); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 

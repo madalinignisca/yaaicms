@@ -152,7 +152,7 @@ func TestTemplateStoreDeleteInactive(t *testing.T) {
 	})
 
 	// Delete inactive — should succeed.
-	if err := s.Delete(created.ID); err != nil {
+	if err := s.Delete(testTemplateTenantID, created.ID); err != nil {
 		t.Fatalf("Delete inactive: %v", err)
 	}
 
@@ -181,7 +181,7 @@ func TestTemplateStoreDeleteActiveBlocked(t *testing.T) {
 	_ = s.Activate(testTemplateTenantID, created.ID)
 
 	// Delete active — should fail.
-	err := s.Delete(created.ID)
+	err := s.Delete(testTemplateTenantID, created.ID)
 	if err == nil {
 		t.Error("expected error when deleting active template")
 	}

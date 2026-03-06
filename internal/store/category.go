@@ -171,8 +171,8 @@ func (s *CategoryStore) Update(c *models.Category) error {
 }
 
 // Delete removes a category by ID. Children are re-parented (ON DELETE SET NULL).
-func (s *CategoryStore) Delete(id uuid.UUID) error {
-	_, err := s.db.Exec(`DELETE FROM categories WHERE id = $1`, id)
+func (s *CategoryStore) Delete(tenantID, id uuid.UUID) error {
+	_, err := s.db.Exec(`DELETE FROM categories WHERE id = $1 AND tenant_id = $2`, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("delete category: %w", err)
 	}

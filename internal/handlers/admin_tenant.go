@@ -540,7 +540,7 @@ func (ta *TenantAdmin) TenantDeleteDomain(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if err := ta.domainStore.Delete(domainID); err != nil {
+	if err := ta.domainStore.Delete(tenantID, domainID); err != nil {
 		slog.Error("failed to delete tenant domain", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

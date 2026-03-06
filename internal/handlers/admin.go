@@ -795,7 +795,7 @@ func (a *Admin) deleteContent(w http.ResponseWriter, r *http.Request, section st
 	// Look up the slug before deleting so we can invalidate its cache entry.
 	item, _ := a.contentStore.FindByID(sess.TenantID, id)
 
-	if err := a.contentStore.Delete(id); err != nil {
+	if err := a.contentStore.Delete(sess.TenantID, id); err != nil {
 		slog.Error("delete content failed", "error", err)
 	} else if item != nil {
 		a.invalidateContentCache(r.Context(), sess.TenantID, id, item.Slug, "delete")
@@ -1051,7 +1051,7 @@ func (a *Admin) TemplateDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.templateStore.Delete(id); err != nil {
+	if err := a.templateStore.Delete(sess.TenantID, id); err != nil {
 		slog.Error("delete template failed", "error", err)
 	} else {
 		a.invalidateTemplateCache(r.Context(), sess.TenantID, id, "delete")
@@ -1578,6 +1578,7 @@ func (a *Admin) CategoryUpdate(w http.ResponseWriter, r *http.Request) {
 
 // CategoryDelete handles deleting a category.
 func (a *Admin) CategoryDelete(w http.ResponseWriter, r *http.Request) {
+	sess := middleware.SessionFromCtx(r.Context())
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -1585,7 +1586,7 @@ func (a *Admin) CategoryDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.categoryStore.Delete(id); err != nil {
+	if err := a.categoryStore.Delete(sess.TenantID, id); err != nil {
 		slog.Error("delete category failed", "error", err)
 		http.Error(w, "Failed to delete category", http.StatusInternalServerError)
 		return

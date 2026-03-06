@@ -153,8 +153,8 @@ func (s *TemplateStore) Activate(tenantID uuid.UUID, id uuid.UUID) error {
 }
 
 // Delete removes a template by ID. Cannot delete an active template.
-func (s *TemplateStore) Delete(id uuid.UUID) error {
-	result, err := s.db.Exec(`DELETE FROM templates WHERE id = $1 AND is_active = FALSE`, id)
+func (s *TemplateStore) Delete(tenantID, id uuid.UUID) error {
+	result, err := s.db.Exec(`DELETE FROM templates WHERE id = $1 AND tenant_id = $2 AND is_active = FALSE`, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("delete template: %w", err)
 	}

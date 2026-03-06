@@ -145,7 +145,7 @@ func (a *Admin) MenuItemUpdate(w http.ResponseWriter, r *http.Request) {
 		item.ContentID = nil
 	}
 
-	if err := a.menuStore.UpdateItem(item); err != nil {
+	if err := a.menuStore.UpdateItem(sess.TenantID, item); err != nil {
 		slog.Error("update menu item failed", "error", err)
 		http.Error(w, "Failed to update menu item", http.StatusInternalServerError)
 		return
@@ -158,6 +158,7 @@ func (a *Admin) MenuItemUpdate(w http.ResponseWriter, r *http.Request) {
 
 // MenuItemDelete handles deleting a menu item.
 func (a *Admin) MenuItemDelete(w http.ResponseWriter, r *http.Request) {
+	sess := middleware.SessionFromCtx(r.Context())
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -165,7 +166,7 @@ func (a *Admin) MenuItemDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.menuStore.DeleteItem(id); err != nil {
+	if err := a.menuStore.DeleteItem(sess.TenantID, id); err != nil {
 		slog.Error("delete menu item failed", "error", err)
 		http.Error(w, "Failed to delete menu item", http.StatusInternalServerError)
 		return

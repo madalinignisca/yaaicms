@@ -149,8 +149,8 @@ func (s *ContentStore) Update(c *models.Content) error {
 }
 
 // Delete removes a content item by ID.
-func (s *ContentStore) Delete(id uuid.UUID) error {
-	_, err := s.db.Exec(`DELETE FROM content WHERE id = $1`, id)
+func (s *ContentStore) Delete(tenantID, id uuid.UUID) error {
+	_, err := s.db.Exec(`DELETE FROM content WHERE id = $1 AND tenant_id = $2`, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("delete content: %w", err)
 	}

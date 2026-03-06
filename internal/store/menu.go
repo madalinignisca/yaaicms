@@ -187,24 +187,28 @@ func (s *MenuStore) CreateItem(item *models.MenuItem) (*models.MenuItem, error) 
 	return result, nil
 }
 
-// UpdateItem modifies an existing menu item.
-func (s *MenuStore) UpdateItem(item *models.MenuItem) error {
+// UpdateItem modifies an existing menu item, scoped to a tenant via its menu.
+func (s *MenuStore) UpdateItem(tenantID uuid.UUID, item *models.MenuItem) error {
 	_, err := s.db.Exec(`
 		UPDATE menu_items SET
 			label = $1, url = $2, content_id = $3, target = $4,
 			parent_id = $5, sort_order = $6, updated_at = NOW()
 		WHERE id = $7
+		  AND menu_id IN (SELECT id FROM menus WHERE tenant_id = $8)
 	`, item.Label, item.URL, item.ContentID, item.Target,
-		item.ParentID, item.SortOrder, item.ID)
+		item.ParentID, item.SortOrder, item.ID, tenantID)
 	if err != nil {
 		return fmt.Errorf("update menu item: %w", err)
 	}
 	return nil
 }
 
-// DeleteItem removes a menu item by ID.
-func (s *MenuStore) DeleteItem(id uuid.UUID) error {
-	_, err := s.db.Exec(`DELETE FROM menu_items WHERE id = $1`, id)
+// DeleteItem removes a menu item by ID, scoped to a tenant via its menu.
+func (s *MenuStore) DeleteItem(tenantID, id uuid.UUID) error {
+	_, err := s.db.Exec(`
+		DELETE FROM menu_items
+		WHERE id = $1 AND menu_id IN (SELECT id FROM menus WHERE tenant_id = $2)
+	`, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("delete menu item: %w", err)
 	}
