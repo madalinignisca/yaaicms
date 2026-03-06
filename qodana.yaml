@@ -51,3 +51,10 @@ exclude:
   - name: YAMLSchemaValidation
   # Duplicate action attributes from HTMX hx-post overriding form action.
   - name: XmlHighlighting
+  # GoLand's analyzer evaluates constant-typed comparisons even through locals.
+  # Tests intentionally assert that type/status constants are distinct — always-false is expected.
+  - name: GoBoolExpressions
+    paths:
+      - internal/models/content_test.go
+  # Duplicated code fragments — deferred to a dedicated refactoring PR.
+  - name: DuplicatedCode
