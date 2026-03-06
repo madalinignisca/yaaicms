@@ -9,6 +9,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Config holds all application configuration values loaded from the environment.
@@ -178,7 +179,7 @@ func (c *Config) IsDev() bool {
 
 // envOrDefault reads an environment variable, returning a fallback if unset or empty.
 func envOrDefault(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 		return v
 	}
 	return fallback
