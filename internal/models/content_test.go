@@ -77,14 +77,18 @@ func TestContentStatusConstants(t *testing.T) {
 
 // TestContentTypeDistinct ensures post and page types are different values.
 func TestContentTypeDistinct(t *testing.T) {
-	if string(ContentTypePost) == string(ContentTypePage) {
+	post := ContentTypePost
+	page := ContentTypePage
+	if post == page {
 		t.Error("ContentTypePost and ContentTypePage must be distinct")
 	}
 }
 
 // TestContentStatusDistinct ensures draft and published statuses are different.
 func TestContentStatusDistinct(t *testing.T) {
-	if string(ContentStatusDraft) == string(ContentStatusPublished) {
+	draft := ContentStatusDraft
+	published := ContentStatusPublished
+	if draft == published {
 		t.Error("ContentStatusDraft and ContentStatusPublished must be distinct")
 	}
 }
