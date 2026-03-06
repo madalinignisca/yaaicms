@@ -6,17 +6,11 @@
 version: "1.0"
 
 # Use the Go linter (based on GoLand) — covers Go + JS/TS inspections.
-linter: jetbrains/qodana-go:2025.3
+linter: qodana-go
 
-# Use the comprehensive recommended inspection profile.
+# Custom inspection profile that extends qodana.recommended with JS/TS enabled.
 profile:
-  name: qodana.recommended
-
-# Enable JavaScript and TypeScript inspections (disabled by default in qodana-go).
-# This covers inline JS in Go HTML templates (AlpineJS, HTMX attributes, fetch calls).
-inspections:
-  - group: "category:JavaScript and TypeScript"
-    enabled: true
+  path: .qodana/profile.xml
 
 # Exclude paths that should not be analyzed.
 exclude:

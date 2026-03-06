@@ -1,0 +1,20 @@
+<component name="InspectionProfile">
+  <profile version="1.0">
+    <option name="myName" value="YaaiCMS"/>
+    <option name="myLocal" value="true"/>
+
+    <!-- Start from the comprehensive recommended profile. -->
+    <option name="BASE_PROFILE" value="qodana.recommended"/>
+
+    <!-- Enable JavaScript and TypeScript inspections (disabled by default in qodana-go).
+         This covers inline JS in Go HTML templates (AlpineJS, HTMX, fetch calls). -->
+    <inspection_tool class="JSUnresolvedReference" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="JSValidateTypes" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="JSUnusedLocalSymbols" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="JSUnusedGlobalSymbols" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="ES6ConvertVarToLetConst" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="JSDeprecatedSymbols" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="JSCheckFunctionSignatures" enabled="true" level="WARNING" enabled_by_default="true"/>
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WARNING" enabled_by_default="true"/>
+  </profile>
+</component>
