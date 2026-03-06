@@ -44,7 +44,7 @@ func (s *VariantStore) CreateBatch(variants []models.MediaVariant) error {
 	if err != nil {
 		return fmt.Errorf("begin variant batch: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO media_variants (media_id, name, width, height, s3_key, content_type, size_bytes)
@@ -53,7 +53,7 @@ func (s *VariantStore) CreateBatch(variants []models.MediaVariant) error {
 	if err != nil {
 		return fmt.Errorf("prepare variant insert: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	for _, v := range variants {
 		if _, err := stmt.Exec(v.MediaID, v.Name, v.Width, v.Height, v.S3Key, v.ContentType, v.SizeBytes); err != nil {
@@ -75,7 +75,7 @@ func (s *VariantStore) FindByMediaID(mediaID uuid.UUID) ([]models.MediaVariant, 
 	if err != nil {
 		return nil, fmt.Errorf("find variants by media: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var variants []models.MediaVariant
 	for rows.Next() {
@@ -115,7 +115,7 @@ func (s *VariantStore) FindByMediaIDs(mediaIDs []uuid.UUID) (map[uuid.UUID][]mod
 	if err != nil {
 		return nil, fmt.Errorf("find variants by media ids: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[uuid.UUID][]models.MediaVariant)
 	for rows.Next() {
@@ -138,7 +138,7 @@ func (s *VariantStore) DeleteByMediaID(mediaID uuid.UUID) ([]models.MediaVariant
 	if err != nil {
 		return nil, fmt.Errorf("delete variants: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var variants []models.MediaVariant
 	for rows.Next() {
@@ -166,7 +166,7 @@ func (s *VariantStore) ListMediaWithoutVariants(limit int) ([]uuid.UUID, error) 
 	if err != nil {
 		return nil, fmt.Errorf("list media without variants: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var ids []uuid.UUID
 	for rows.Next() {

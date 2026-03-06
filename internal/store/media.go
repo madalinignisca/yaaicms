@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -63,7 +64,7 @@ func (s *MediaStore) Create(tenantID uuid.UUID, m *models.Media) (*models.Media,
 func (s *MediaStore) FindByID(id uuid.UUID) (*models.Media, error) {
 	row := s.db.QueryRow(`SELECT `+mediaColumns+` FROM media WHERE id = $1`, id)
 	m, err := scanMedia(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -84,7 +85,7 @@ func (s *MediaStore) List(tenantID uuid.UUID, limit, offset int) ([]models.Media
 	if err != nil {
 		return nil, fmt.Errorf("list media: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Media
 	for rows.Next() {
@@ -104,7 +105,7 @@ func (s *MediaStore) Delete(id uuid.UUID) (*models.Media, error) {
 		DELETE FROM media WHERE id = $1
 		RETURNING `+mediaColumns, id)
 	m, err := scanMedia(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -148,7 +149,7 @@ func (s *MediaStore) FindByS3Keys(keys []string) (map[string]*models.Media, erro
 	if err != nil {
 		return nil, fmt.Errorf("find media by s3 keys: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[string]*models.Media)
 	for rows.Next() {

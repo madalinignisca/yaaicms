@@ -160,7 +160,7 @@ func TestLoginSubmit_ValidCredentials_TOTPEnabled(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		// Reset TOTP after test to avoid polluting other tests.
-		env.UserStore.ResetTOTP(user.ID)
+		_ = env.UserStore.ResetTOTP(user.ID)
 	})
 
 	form := url.Values{}
@@ -312,7 +312,7 @@ func TestTwoFASetupPage_AlreadyEnabled(t *testing.T) {
 		t.Fatalf("enable totp: %v", err)
 	}
 	t.Cleanup(func() {
-		env.UserStore.ResetTOTP(user.ID)
+		_ = env.UserStore.ResetTOTP(user.ID)
 	})
 
 	sess := testSession(user.ID, user.Email, "admin", false)
@@ -420,7 +420,7 @@ func TestTwoFAVerifySubmit_InvalidCode(t *testing.T) {
 		t.Fatalf("enable totp: %v", err)
 	}
 	t.Cleanup(func() {
-		env.UserStore.ResetTOTP(user.ID)
+		_ = env.UserStore.ResetTOTP(user.ID)
 	})
 
 	sess := testSession(user.ID, user.Email, "admin", false)

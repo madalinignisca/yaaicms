@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -56,7 +57,7 @@ func main() {
 		slog.Error("failed to connect to database", "error", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Run pending migrations.
 	if err := database.Migrate(db); err != nil {
@@ -209,7 +210,7 @@ func main() {
 	// Start the server in a goroutine so we can listen for shutdown signals.
 	go func() {
 		slog.Info("server starting", "addr", cfg.Addr())
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server failed to start", "error", err)
 			os.Exit(1)
 		}

@@ -81,7 +81,7 @@ func (p *openAIProvider) doChat(ctx context.Context, body openAIRequest) (string
 	if err != nil {
 		return "", fmt.Errorf("openai http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -142,7 +142,7 @@ func (p *openAIProvider) GenerateImage(ctx context.Context, prompt string) ([]by
 	if err != nil {
 		return nil, "", fmt.Errorf("openai image http: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

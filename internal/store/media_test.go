@@ -85,11 +85,11 @@ func TestMediaStoreList(t *testing.T) {
 	key2 := "media/test/list-" + uuid.NewString()[:8] + ".png"
 	t.Cleanup(func() { cleanMediaByKey(t, db, key1, key2) })
 
-	s.Create(testMediaTenantID, &models.Media{
+	_, _ = s.Create(testMediaTenantID, &models.Media{
 		Filename: "a.jpg", OriginalName: "a.jpg", ContentType: "image/jpeg",
 		SizeBytes: 100, Bucket: "public", S3Key: key1, UploaderID: uploaderID,
 	})
-	s.Create(testMediaTenantID, &models.Media{
+	_, _ = s.Create(testMediaTenantID, &models.Media{
 		Filename: "b.png", OriginalName: "b.png", ContentType: "image/png",
 		SizeBytes: 200, Bucket: "public", S3Key: key2, UploaderID: uploaderID,
 	})
@@ -123,14 +123,14 @@ func TestMediaStoreDelete(t *testing.T) {
 
 	key := "media/test/del-" + uuid.NewString()[:8] + ".jpg"
 
-	s.Create(testMediaTenantID, &models.Media{
+	_, _ = s.Create(testMediaTenantID, &models.Media{
 		Filename: "del.jpg", OriginalName: "del.jpg", ContentType: "image/jpeg",
 		SizeBytes: 100, Bucket: "public", S3Key: key, UploaderID: uploaderID,
 	})
 
 	// Get the ID from the DB.
 	var id uuid.UUID
-	db.QueryRow("SELECT id FROM media WHERE s3_key = $1", key).Scan(&id)
+	_ = db.QueryRow("SELECT id FROM media WHERE s3_key = $1", key).Scan(&id)
 
 	deleted, err := s.Delete(id)
 	if err != nil {

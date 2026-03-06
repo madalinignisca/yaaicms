@@ -442,7 +442,7 @@ func TestAITemplateGenerate_InvalidSyntax(t *testing.T) {
 	env.Admin.AITemplateGenerate(rec, req)
 
 	var resp templateGenResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
 
 	if resp.Valid {
 		t.Error("expected invalid template")
@@ -467,7 +467,7 @@ func TestAITemplateGenerate_WithCurrentHTML(t *testing.T) {
 	env.Admin.AITemplateGenerate(rec, req)
 
 	var resp templateGenResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
 
 	if resp.HTML == "" {
 		t.Error("expected generated HTML")
@@ -507,7 +507,7 @@ func TestAITemplateGenerate_AIError(t *testing.T) {
 	env.Admin.AITemplateGenerate(rec, req)
 
 	var resp templateGenResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
 
 	if resp.Error == "" {
 		t.Error("expected error in response")
@@ -545,7 +545,7 @@ func TestAITemplateSave_InvalidSyntax(t *testing.T) {
 	env.Admin.AITemplateSave(rec, req)
 
 	var resp templateSaveResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
 
 	if resp.Error == "" {
 		t.Error("expected error for invalid syntax")
@@ -569,7 +569,7 @@ func TestAITemplateSave_ValidTemplate(t *testing.T) {
 	env.Admin.AITemplateSave(rec, req)
 
 	var resp templateSaveResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
 
 	if resp.Error != "" {
 		t.Fatalf("unexpected error: %s", resp.Error)

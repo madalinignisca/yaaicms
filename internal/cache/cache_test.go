@@ -30,7 +30,7 @@ func testValkeyClient(t *testing.T) *redis.Client {
 
 	ctx := context.Background()
 	if err := client.Ping(ctx).Err(); err != nil {
-		client.Close()
+		_ = client.Close()
 		t.Skipf("skipping integration test: Valkey not reachable: %v", err)
 	}
 
@@ -39,7 +39,7 @@ func testValkeyClient(t *testing.T) *redis.Client {
 		if len(keys) > 0 {
 			client.Del(ctx, keys...)
 		}
-		client.Close()
+		_ = client.Close()
 	})
 
 	return client
@@ -60,7 +60,7 @@ func TestConnectValkey(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: Valkey not available: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Verify connection.
 	ctx := context.Background()

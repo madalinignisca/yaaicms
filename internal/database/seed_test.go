@@ -13,7 +13,7 @@ func TestSeedIdempotent(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: DB not available: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := Migrate(db); err != nil {
 		t.Fatalf("Migrate: %v", err)

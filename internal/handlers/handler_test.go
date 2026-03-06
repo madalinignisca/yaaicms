@@ -68,17 +68,17 @@ func testDB(t *testing.T) *sql.DB {
 		t.Skipf("skipping: cannot open DB: %v", err)
 	}
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Skipf("skipping: DB not reachable: %v", err)
 	}
 
 	if err := database.Migrate(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Fatalf("migrate: %v", err)
 	}
 	goose.SetBaseFS(nil)
 
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	return db
 }
 
@@ -98,7 +98,7 @@ func testValkeyClient(t *testing.T) *redis.Client {
 
 	ctx := context.Background()
 	if err := client.Ping(ctx).Err(); err != nil {
-		client.Close()
+		_ = client.Close()
 		t.Skipf("skipping: Valkey not reachable: %v", err)
 	}
 
@@ -110,7 +110,7 @@ func testValkeyClient(t *testing.T) *redis.Client {
 				client.Del(ctx, keys...)
 			}
 		}
-		client.Close()
+		_ = client.Close()
 	})
 
 	return client
@@ -247,7 +247,7 @@ func testAuthorID(t *testing.T, db *sql.DB) uuid.UUID {
 func cleanContent(t *testing.T, db *sql.DB, slugs ...string) {
 	t.Helper()
 	for _, s := range slugs {
-		db.Exec("DELETE FROM content WHERE slug = $1", s)
+		_, _ = db.Exec("DELETE FROM content WHERE slug = $1", s)
 	}
 }
 
@@ -255,6 +255,6 @@ func cleanContent(t *testing.T, db *sql.DB, slugs ...string) {
 func cleanTemplates(t *testing.T, db *sql.DB, names ...string) {
 	t.Helper()
 	for _, n := range names {
-		db.Exec("DELETE FROM templates WHERE name = $1", n)
+		_, _ = db.Exec("DELETE FROM templates WHERE name = $1", n)
 	}
 }

@@ -755,7 +755,7 @@ func (a *Admin) RevisionUpdateTitle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<span class="text-xs font-medium text-gray-900">%s</span>`, html.EscapeString(newTitle))
+	_, _ = fmt.Fprintf(w, `<span class="text-xs font-medium text-gray-900">%s</span>`, html.EscapeString(newTitle))
 }
 
 // ptrStr safely dereferences a *string pointer, returning "" if nil.
@@ -1096,12 +1096,12 @@ func (a *Admin) TemplatePreview(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		safeErr := html.EscapeString(err.Error())
-		w.Write([]byte(`<div class="p-4 bg-red-50 border border-red-200 rounded text-red-800 text-sm">Template error: ` + safeErr + `</div>`))
+		_, _ = w.Write([]byte(`<div class="p-4 bg-red-50 border border-red-200 rounded text-red-800 text-sm">Template error: ` + safeErr + `</div>`))
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(result)
+	_, _ = w.Write(result)
 }
 
 // TemplateRevisionRestore restores a template to the state captured in a revision.
@@ -1189,7 +1189,7 @@ func (a *Admin) TemplateRevisionUpdateTitle(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<span class="text-xs font-medium text-gray-900">%s</span>`, html.EscapeString(newTitle))
+	_, _ = fmt.Fprintf(w, `<span class="text-xs font-medium text-gray-900">%s</span>`, html.EscapeString(newTitle))
 }
 
 // generateTemplateRevisionMeta generates AI-powered revision title and changelog
@@ -1607,5 +1607,5 @@ func (a *Admin) CategoryReorder(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"ok":true}`))
+	_, _ = w.Write([]byte(`{"ok":true}`))
 }

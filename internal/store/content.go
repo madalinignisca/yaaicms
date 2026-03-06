@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -55,7 +56,7 @@ func (s *ContentStore) ListByType(tenantID uuid.UUID, contentType models.Content
 	if err != nil {
 		return nil, fmt.Errorf("list content by type: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Content
 	for rows.Next() {
@@ -72,7 +73,7 @@ func (s *ContentStore) ListByType(tenantID uuid.UUID, contentType models.Content
 func (s *ContentStore) FindByID(id uuid.UUID) (*models.Content, error) {
 	row := s.db.QueryRow(`SELECT `+contentColumns+` FROM content WHERE id = $1`, id)
 	c, err := scanContent(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -88,7 +89,7 @@ func (s *ContentStore) FindBySlug(tenantID uuid.UUID, slug string) (*models.Cont
 		FROM content WHERE tenant_id = $1 AND slug = $2 AND status = 'published'
 	`, tenantID, slug)
 	c, err := scanContent(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -168,7 +169,7 @@ func (s *ContentStore) ListPublishedByType(tenantID uuid.UUID, contentType model
 	if err != nil {
 		return nil, fmt.Errorf("list published content: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Content
 	for rows.Next() {

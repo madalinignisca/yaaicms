@@ -32,17 +32,6 @@ const (
 	csrfContextKey contextKey = "csrf_token"
 )
 
-// CSRF provides double-submit cookie CSRF protection. It generates a
-// token stored in a cookie and validates that subsequent state-changing
-// requests (POST, PUT, PATCH, DELETE) include the same token as a header
-// or form field.
-//
-// This works well with HTMX: the admin layout sets hx-headers with the
-// CSRF token so all HTMX requests include it automatically.
-//
-// Deprecated: Use NewCSRF(secure) to control the cookie Secure flag.
-var CSRF = NewCSRF(false)
-
 // NewCSRF returns a CSRF middleware with the cookie Secure flag controlled
 // by the secure parameter. Set secure=true in production (behind TLS).
 func NewCSRF(secure bool) func(http.Handler) http.Handler {

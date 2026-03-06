@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -65,7 +66,7 @@ func (s *TemplateRevisionStore) ListByTemplateID(templateID uuid.UUID) ([]*model
 	if err != nil {
 		return nil, fmt.Errorf("list template revisions: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var revisions []*models.TemplateRevision
 	for rows.Next() {
@@ -86,7 +87,7 @@ func (s *TemplateRevisionStore) FindByID(id uuid.UUID) (*models.TemplateRevision
 		WHERE id = $1
 	`, id)
 	r, err := scanTemplateRevision(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	return r, err

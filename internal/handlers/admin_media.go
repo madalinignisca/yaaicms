@@ -99,7 +99,7 @@ func (a *Admin) MediaLibrary(w http.ResponseWriter, r *http.Request) {
 func (a *Admin) MediaListJSON(w http.ResponseWriter, r *http.Request) {
 	if a.storageClient == nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": []any{}})
 		return
 	}
 
@@ -140,7 +140,7 @@ func (a *Admin) MediaListJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"items": result})
+	_ = json.NewEncoder(w).Encode(map[string]any{"items": result})
 }
 
 // MediaUpload handles multipart file upload to S3.
@@ -164,7 +164,7 @@ func (a *Admin) MediaUpload(w http.ResponseWriter, r *http.Request) {
 		writeMediaError(w, "No file provided.", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Validate file size.
 	if header.Size > maxUploadSize {
@@ -270,7 +270,7 @@ func (a *Admin) MediaUpload(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"id":        created.ID,
 		"url":       url,
 		"thumb_url": thumbURL,
@@ -482,7 +482,7 @@ func (a *Admin) MediaRegenerateVariants(w http.ResponseWriter, r *http.Request) 
 	slog.Info("variants regenerated", "media_id", id, "count", len(pendingVariants))
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"ok":      true,
 		"count":   len(pendingVariants),
 		"message": fmt.Sprintf("Regenerated %d variants.", len(pendingVariants)),
@@ -508,7 +508,7 @@ func (a *Admin) MediaRegenerateBulk(w http.ResponseWriter, r *http.Request) {
 
 	if len(ids) == 0 {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"ok":        true,
 			"processed": 0,
 			"message":   "All images already have variants.",
@@ -549,7 +549,7 @@ func (a *Admin) MediaRegenerateBulk(w http.ResponseWriter, r *http.Request) {
 	slog.Info("bulk variant regeneration complete", "processed", processed, "failed", failed)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"ok":        true,
 		"processed": processed,
 		"failed":    failed,
@@ -582,5 +582,5 @@ func extensionFromType(contentType string) string {
 func writeMediaError(w http.ResponseWriter, msg string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }

@@ -21,7 +21,7 @@ func TestCacheLogStoreLog(t *testing.T) {
 
 	// Clean up.
 	t.Cleanup(func() {
-		db.Exec("DELETE FROM cache_invalidation_log WHERE entity_id = $1", entityID)
+		_, _ = db.Exec("DELETE FROM cache_invalidation_log WHERE entity_id = $1", entityID)
 	})
 
 	// Verify entry was written.
@@ -49,7 +49,7 @@ func TestCacheLogStoreRecentEntries(t *testing.T) {
 	s.Log(tenantID, "template", id2, "delete")
 
 	t.Cleanup(func() {
-		db.Exec("DELETE FROM cache_invalidation_log WHERE entity_id IN ($1, $2)", id1, id2)
+		_, _ = db.Exec("DELETE FROM cache_invalidation_log WHERE entity_id IN ($1, $2)", id1, id2)
 	})
 
 	entries, err := s.RecentEntries(tenantID, 10)

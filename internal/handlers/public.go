@@ -72,7 +72,7 @@ func (p *Public) Homepage(w http.ResponseWriter, r *http.Request) {
 	// Check L2 cache first.
 	if cached, ok := p.pageCache.Get(ctx, cache.HomepageKey(tenant.ID.String())); ok {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(cached)
+		_, _ = w.Write(cached)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (p *Public) Homepage(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			p.pageCache.Set(ctx, cache.HomepageKey(tenant.ID.String()), rendered)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write(rendered)
+			_, _ = w.Write(rendered)
 			return
 		}
 		slog.Warn("article_loop render failed, trying homepage", "error", err)
@@ -104,7 +104,7 @@ func (p *Public) Homepage(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			p.pageCache.Set(ctx, cache.HomepageKey(tenant.ID.String()), rendered)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Write(rendered)
+			_, _ = w.Write(rendered)
 			return
 		}
 		slog.Warn("homepage render failed", "error", err)
@@ -112,7 +112,7 @@ func (p *Public) Homepage(w http.ResponseWriter, r *http.Request) {
 
 	// Default fallback when no templates or content exist yet (not cached).
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html>
+	_, _ = w.Write([]byte(`<!DOCTYPE html>
 <html><head><title>YaaiCMS</title>
 <script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -138,7 +138,7 @@ func (p *Public) Page(w http.ResponseWriter, r *http.Request) {
 	// Check L2 cache first.
 	if cached, ok := p.pageCache.Get(ctx, cache.SlugKey(tenant.ID.String(), slugParam)); ok {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(cached)
+		_, _ = w.Write(cached)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (p *Public) Page(w http.ResponseWriter, r *http.Request) {
 		// Never render raw user content — it bypasses html/template escaping.
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		safeTitle := html.EscapeString(content.Title)
-		w.Write([]byte(`<!DOCTYPE html><html><head><title>` + safeTitle + `</title>
+		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>` + safeTitle + `</title>
 <script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 <div class="text-center">
@@ -178,7 +178,7 @@ func (p *Public) Page(w http.ResponseWriter, r *http.Request) {
 	p.pageCache.Set(ctx, cache.SlugKey(tenant.ID.String(), slugParam), rendered)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(rendered)
+	_, _ = w.Write(rendered)
 }
 
 // buildSocialMeta constructs the SocialMeta context for a page render.

@@ -110,7 +110,7 @@ func TestContentStoreFindBySlug(t *testing.T) {
 	t.Cleanup(func() { cleanContent(t, db, slug) })
 
 	// Create draft — should NOT be findable by slug.
-	s.Create(testContentTenantID, &models.Content{
+	_, _ = s.Create(testContentTenantID, &models.Content{
 		Type: models.ContentTypePost, Title: "Draft", Slug: slug,
 		Body: "draft", Status: models.ContentStatusDraft, AuthorID: authorID,
 	})
@@ -124,7 +124,7 @@ func TestContentStoreFindBySlug(t *testing.T) {
 	}
 
 	// Update to published.
-	db.Exec("UPDATE content SET status = 'published', published_at = NOW() WHERE slug = $1", slug)
+	_, _ = db.Exec("UPDATE content SET status = 'published', published_at = NOW() WHERE slug = $1", slug)
 
 	found, err = s.FindBySlug(testContentTenantID, slug)
 	if err != nil {
@@ -153,11 +153,11 @@ func TestContentStoreListByType(t *testing.T) {
 	slug2 := "test-list-page-" + uuid.NewString()[:8]
 	t.Cleanup(func() { cleanContent(t, db, slug1, slug2) })
 
-	s.Create(testContentTenantID, &models.Content{
+	_, _ = s.Create(testContentTenantID, &models.Content{
 		Type: models.ContentTypePost, Title: "List Post", Slug: slug1,
 		Body: "body", Status: models.ContentStatusDraft, AuthorID: authorID,
 	})
-	s.Create(testContentTenantID, &models.Content{
+	_, _ = s.Create(testContentTenantID, &models.Content{
 		Type: models.ContentTypePage, Title: "List Page", Slug: slug2,
 		Body: "body", Status: models.ContentStatusDraft, AuthorID: authorID,
 	})
@@ -256,7 +256,7 @@ func TestContentStoreListPublishedByType(t *testing.T) {
 	t.Cleanup(func() { cleanContent(t, db, slug) })
 
 	// Create a published post.
-	s.Create(testContentTenantID, &models.Content{
+	_, _ = s.Create(testContentTenantID, &models.Content{
 		Type: models.ContentTypePost, Title: "Published", Slug: slug,
 		Body: "body", Status: models.ContentStatusPublished, AuthorID: authorID,
 	})

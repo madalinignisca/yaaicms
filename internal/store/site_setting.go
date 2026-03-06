@@ -6,6 +6,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ func (s *SiteSettingStore) All(tenantID uuid.UUID) (models.SiteSettings, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	settings := make(models.SiteSettings)
 	for rows.Next() {
@@ -46,7 +47,7 @@ func (s *SiteSettingStore) All(tenantID uuid.UUID) (models.SiteSettings, error) 
 func (s *SiteSettingStore) Get(tenantID uuid.UUID, key, fallback string) (string, error) {
 	var val string
 	err := s.db.QueryRow(`SELECT value FROM site_settings WHERE key = $1 AND tenant_id = $2`, key, tenantID).Scan(&val)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return fallback, nil
 	}
 	if err != nil {
@@ -76,7 +77,7 @@ func (s *SiteSettingStore) SetMany(tenantID uuid.UUID, settings map[string]strin
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO site_settings (tenant_id, key, value, updated_at)
@@ -86,7 +87,7 @@ func (s *SiteSettingStore) SetMany(tenantID uuid.UUID, settings map[string]strin
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	now := time.Now()
 	for k, v := range settings {

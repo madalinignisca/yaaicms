@@ -28,7 +28,7 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	for _, key := range envVars {
 		t.Setenv(key, "")
-		os.Unsetenv(key)
+		_ = os.Unsetenv(key)
 	}
 	// Re-set them with t.Setenv so they are restored after the test.
 	// Actually, t.Setenv already handles cleanup. We need to truly unset them.

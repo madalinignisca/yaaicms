@@ -10,11 +10,11 @@ package markdown
 import (
 	"bytes"
 
-	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 )
 
 // md is the configured goldmark instance, reused across calls.

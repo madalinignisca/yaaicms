@@ -750,7 +750,7 @@ func TestUserResetTwoFA_OtherUser_Redirects(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create target user: %v", err)
 	}
-	t.Cleanup(func() { env.UserStore.Delete(targetUser.ID) })
+	t.Cleanup(func() { _ = env.UserStore.Delete(targetUser.ID) })
 
 	req := httptest.NewRequest(http.MethodPost, "/admin/users/"+targetUser.ID.String()+"/reset-2fa", nil)
 	req = withChiURLParamAndSession(req, "id", targetUser.ID.String(), sess)

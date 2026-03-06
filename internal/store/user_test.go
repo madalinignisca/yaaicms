@@ -114,8 +114,8 @@ func TestUserStoreList(t *testing.T) {
 	email2 := "test-list-b@store-test.local"
 	t.Cleanup(func() { cleanUsers(t, db, email1, email2) })
 
-	s.Create(email1, "pass", "A")
-	s.Create(email2, "pass", "B")
+	_, _ = s.Create(email1, "pass", "A")
+	_, _ = s.Create(email2, "pass", "B")
 
 	users, err := s.List()
 	if err != nil {
