@@ -88,7 +88,8 @@ func (p *Public) Homepage(w http.ResponseWriter, r *http.Request) {
 		siteTitle, slogan := p.loadSiteTitleAndSlogan(tenant.ID, tenant.Name)
 		menus := p.loadMenus(tenant.ID, "")
 		authors := p.loadAuthors(posts)
-		rendered, err := p.engine.RenderPostList(tenant.ID, siteTitle, slogan, posts, p.resolveFeaturedImages(tenant.ID, posts), authors, menus)
+		var rendered []byte
+		rendered, err = p.engine.RenderPostList(tenant.ID, siteTitle, slogan, posts, p.resolveFeaturedImages(tenant.ID, posts), authors, menus)
 		if err == nil {
 			p.pageCache.Set(ctx, cache.HomepageKey(tenant.ID.String()), rendered)
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -200,7 +201,7 @@ func (p *Public) AuthorPage(w http.ResponseWriter, r *http.Request) {
 	// Look up the author by their profile slug.
 	userID, displayName, profile, err := p.userProfileStore.FindAuthorBySlug(authorSlug)
 	if err != nil {
-		slog.Error("find author by slug failed", "error", err, "slug", authorSlug)
+		slog.Error("find author by slug failed", "error", err, "slug", authorSlug) //nolint:gosec // G706: slug is a URL path param logged for debugging; slog structured values are safe.
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -235,31 +236,30 @@ func (p *Public) AuthorPage(w http.ResponseWriter, r *http.Request) {
 
 	// Build PostItems with featured images.
 	featuredImages := p.resolveFeaturedImages(tenant.ID, posts)
-	var postItems []engine.PostItem
-	for _, post := range posts {
-		item := engine.PostItem{
-			Title:      post.Title,
-			Slug:       post.Slug,
+	postItems := make([]engine.PostItem, len(posts))
+	for i := range posts {
+		postItems[i] = engine.PostItem{
+			Title:      posts[i].Title,
+			Slug:       posts[i].Slug,
 			AuthorName: displayName,
 			AuthorSlug: profile.Slug,
 		}
-		if post.Excerpt != nil {
-			item.Excerpt = *post.Excerpt
+		if posts[i].Excerpt != nil {
+			postItems[i].Excerpt = *posts[i].Excerpt
 		}
-		if post.PublishedAt != nil {
-			item.PublishedAt = post.PublishedAt.Format("January 2, 2006")
+		if posts[i].PublishedAt != nil {
+			postItems[i].PublishedAt = posts[i].PublishedAt.Format("January 2, 2006")
 		}
-		if img := featuredImages[post.ID.String()]; img != nil {
-			item.FeaturedImageURL = img.URL
-			item.FeaturedImageSrcset = img.Srcset
-			item.FeaturedImageAlt = img.Alt
+		if img := featuredImages[posts[i].ID.String()]; img != nil {
+			postItems[i].FeaturedImageURL = img.URL
+			postItems[i].FeaturedImageSrcset = img.Srcset
+			postItems[i].FeaturedImageAlt = img.Alt
 		}
-		postItems = append(postItems, item)
 	}
 
-	rendered, err := p.engine.RenderAuthorPage(tenant.ID, siteTitle, slogan, author, postItems, menus)
+	rendered, err := p.engine.RenderAuthorPage(tenant.ID, siteTitle, slogan, &author, postItems, menus)
 	if err != nil {
-		slog.Error("render author page failed", "error", err, "slug", authorSlug)
+		slog.Error("render author page failed", "error", err, "slug", authorSlug) //nolint:gosec // G706: slug is a URL path param logged for debugging; slog structured values are safe.
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -303,10 +303,10 @@ func (p *Public) loadAuthors(posts []models.Content) map[uuid.UUID]*engine.Templ
 	// Collect unique author IDs.
 	seen := make(map[uuid.UUID]bool)
 	var authorIDs []uuid.UUID
-	for _, post := range posts {
-		if !seen[post.AuthorID] {
-			seen[post.AuthorID] = true
-			authorIDs = append(authorIDs, post.AuthorID)
+	for i := range posts {
+		if !seen[posts[i].AuthorID] {
+			seen[posts[i].AuthorID] = true
+			authorIDs = append(authorIDs, posts[i].AuthorID)
 		}
 	}
 

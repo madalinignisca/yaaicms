@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -29,7 +30,7 @@ const userProfileColumns = `user_id, slug, bio, avatar_url, website, location,
 	is_published, created_at, updated_at`
 
 // scanUserProfile scans a row into a UserProfile struct.
-func scanUserProfile(scanner interface{ Scan(...any) error }) (*models.UserProfile, error) {
+func scanUserProfile(scanner interface{ Scan(dest ...any) error }) (*models.UserProfile, error) {
 	var p models.UserProfile
 	err := scanner.Scan(
 		&p.UserID, &p.Slug, &p.Bio, &p.AvatarURL, &p.Website, &p.Location,
@@ -47,7 +48,7 @@ func (s *UserProfileStore) FindByUserID(userID uuid.UUID) (*models.UserProfile, 
 	row := s.db.QueryRow(`SELECT `+userProfileColumns+` FROM user_profiles WHERE user_id = $1`, userID)
 	p, err := scanUserProfile(row)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, nil //nolint:nilnil // nil profile = not found, consistent with other stores.
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find user profile: %w", err)
@@ -88,20 +89,22 @@ func (s *UserProfileStore) Upsert(p *models.UserProfile) error {
 // Returns a map of user_id → profile. Users without profiles are absent.
 func (s *UserProfileStore) FindByUserIDs(userIDs []uuid.UUID) (map[uuid.UUID]*models.UserProfile, error) {
 	if len(userIDs) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // empty input → empty output.
 	}
 
 	// Build placeholder list for IN clause.
-	placeholders := ""
+	var b strings.Builder
 	args := make([]any, len(userIDs))
 	for i, id := range userIDs {
 		if i > 0 {
-			placeholders += ", "
+			b.WriteString(", ")
 		}
-		placeholders += fmt.Sprintf("$%d", i+1)
+		fmt.Fprintf(&b, "$%d", i+1)
 		args[i] = id
 	}
+	placeholders := b.String()
 
+	//nolint:gosec // G202: placeholders are generated from integer indices, not user input.
 	rows, err := s.db.Query(`
 		SELECT `+userProfileColumns+`
 		FROM user_profiles
@@ -178,8 +181,6 @@ func (s *UserProfileStore) FindAuthorByUserID(userID uuid.UUID) (string, *models
 	return displayName, &p, nil
 }
 
-// FindAuthorBySlug retrieves the user ID, display name, and profile for
-// an author identified by their profile slug.
 // FindAuthorBySlug retrieves the user ID, display name, and profile for
 // an author identified by their profile slug. Only returns published profiles
 // so that unpublished author pages are not accessible on the public site.

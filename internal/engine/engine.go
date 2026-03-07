@@ -10,6 +10,7 @@ package engine
 import (
 	"bytes"
 	_ "embed"
+	"errors"
 	"fmt"
 	"html"
 	"html/template"
@@ -149,7 +150,7 @@ type ListData struct {
 type AuthorPageData struct {
 	SiteTitle string
 	Slogan    string
-	Author    TemplateAuthor
+	Author    *TemplateAuthor
 	Posts     []PostItem
 	Header    template.HTML
 	Footer    template.HTML
@@ -389,7 +390,7 @@ func (e *Engine) RenderPostList(tenantID uuid.UUID, siteTitle, slogan string, po
 
 // RenderAuthorPage renders the author profile page with their published posts.
 // It reuses the article_loop template but passes AuthorPageData instead of ListData.
-func (e *Engine) RenderAuthorPage(tenantID uuid.UUID, siteTitle, slogan string, author TemplateAuthor, posts []PostItem, menus Menus) ([]byte, error) {
+func (e *Engine) RenderAuthorPage(tenantID uuid.UUID, siteTitle, slogan string, author *TemplateAuthor, posts []PostItem, menus Menus) ([]byte, error) {
 	fragData := &FragmentData{
 		SiteTitle: siteTitle,
 		Slogan:    slogan,
@@ -411,7 +412,7 @@ func (e *Engine) RenderAuthorPage(tenantID uuid.UUID, siteTitle, slogan string, 
 
 	loopTmpl, err := e.templateStore.FindActiveByType(tenantID, models.TemplateTypeArticleLoop)
 	if err != nil || loopTmpl == nil {
-		return nil, fmt.Errorf("no active article_loop template found")
+		return nil, errors.New("no active article_loop template found")
 	}
 
 	data := AuthorPageData{
@@ -419,8 +420,8 @@ func (e *Engine) RenderAuthorPage(tenantID uuid.UUID, siteTitle, slogan string, 
 		Slogan:    slogan,
 		Author:    author,
 		Posts:     posts,
-		Header:    template.HTML(header),
-		Footer:    template.HTML(footer),
+		Header:    template.HTML(header), //nolint:gosec // G203: header is rendered from a trusted DB template, not user input.
+		Footer:    template.HTML(footer), //nolint:gosec // G203: footer is rendered from a trusted DB template, not user input.
 		Year:      time.Now().Year(),
 		Menus:     menus,
 	}

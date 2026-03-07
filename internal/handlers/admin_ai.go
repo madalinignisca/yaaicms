@@ -1476,10 +1476,10 @@ func (a *Admin) buildRealArticleLoopPreview(tenantID uuid.UUID) any {
 	if a.userProfileStore != nil {
 		authorSeen := make(map[uuid.UUID]bool)
 		var authorIDs []uuid.UUID
-		for _, p := range posts {
-			if !authorSeen[p.AuthorID] {
-				authorSeen[p.AuthorID] = true
-				authorIDs = append(authorIDs, p.AuthorID)
+		for i := range posts {
+			if !authorSeen[posts[i].AuthorID] {
+				authorSeen[posts[i].AuthorID] = true
+				authorIDs = append(authorIDs, posts[i].AuthorID)
 			}
 		}
 		for _, aid := range authorIDs {

@@ -1509,7 +1509,9 @@ func (a *Admin) ProfilePage(w http.ResponseWriter, r *http.Request) {
 
 // ProfileSave handles POST /admin/profile to update the user's profile.
 func (a *Admin) ProfileSave(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB limit.
+	err := r.ParseForm()
+	if err != nil {
 		http.Error(w, "invalid form data", http.StatusBadRequest)
 		return
 	}
@@ -1522,14 +1524,16 @@ func (a *Admin) ProfileSave(w http.ResponseWriter, r *http.Request) {
 		newDisplayName = sess.DisplayName
 	}
 	if newDisplayName != sess.DisplayName {
-		if err := a.userStore.UpdateDisplayName(sess.UserID, newDisplayName); err != nil {
+		err = a.userStore.UpdateDisplayName(sess.UserID, newDisplayName)
+		if err != nil {
 			slog.Error("update display name failed", "error", err)
 			http.Error(w, "failed to update display name", http.StatusInternalServerError)
 			return
 		}
 		// Update session so the admin header reflects the new name immediately.
 		sess.DisplayName = newDisplayName
-		if err := a.sessions.Update(r.Context(), r, sess); err != nil {
+		err = a.sessions.Update(r.Context(), r, sess)
+		if err != nil {
 			slog.Warn("failed to update session after display name change", "error", err)
 		}
 	}
@@ -1551,7 +1555,8 @@ func (a *Admin) ProfileSave(w http.ResponseWriter, r *http.Request) {
 		IsPublished: r.FormValue("is_published") == "on",
 	}
 
-	if err := a.userProfileStore.Upsert(profile); err != nil {
+	err = a.userProfileStore.Upsert(profile)
+	if err != nil {
 		slog.Error("upsert user profile failed", "error", err)
 		http.Error(w, "failed to save profile", http.StatusInternalServerError)
 		return

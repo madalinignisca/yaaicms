@@ -38,7 +38,8 @@ func Seed(db *sql.DB) error {
 	if err := seedMenus(db); err != nil {
 		return fmt.Errorf("seed menus: %w", err)
 	}
-	if err := seedAdminProfile(db); err != nil {
+	err := seedAdminProfile(db)
+	if err != nil {
 		return fmt.Errorf("seed admin profile: %w", err)
 	}
 	return nil
@@ -349,11 +350,13 @@ func seedAdminProfile(db *sql.DB) error {
 	var userID string
 	err := db.QueryRow("SELECT id FROM users WHERE email = 'admin@yaaicms.local'").Scan(&userID)
 	if err != nil {
-		return nil // No admin user yet — skip.
+		// No admin user yet — nothing to seed.
+		return nil //nolint:nilerr // Intentional: missing admin user is not an error for seeding.
 	}
 
 	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM user_profiles WHERE user_id = $1", userID).Scan(&count); err != nil {
+	err = db.QueryRow("SELECT COUNT(*) FROM user_profiles WHERE user_id = $1", userID).Scan(&count)
+	if err != nil {
 		return fmt.Errorf("check admin profile: %w", err)
 	}
 	if count > 0 {
