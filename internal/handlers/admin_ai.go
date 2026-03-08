@@ -952,6 +952,8 @@ func (a *Admin) AITemplateGenerate(w http.ResponseWriter, r *http.Request) {
 // AITemplateSave saves a generated template to the database.
 // Validates the template before saving and triggers cache invalidation.
 func (a *Admin) AITemplateSave(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB limit.
+
 	sess := middleware.SessionFromCtx(r.Context())
 
 	tmplType := models.TemplateType(r.FormValue("type"))

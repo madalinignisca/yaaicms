@@ -189,7 +189,8 @@ func (s *TemplateStore) ListDistinctPrefixes(tenantID uuid.UUID) ([]string, erro
 	var prefixes []string
 	for rows.Next() {
 		var p string
-		if err := rows.Scan(&p); err != nil {
+		err = rows.Scan(&p)
+		if err != nil {
 			return nil, fmt.Errorf("scan prefix: %w", err)
 		}
 		prefixes = append(prefixes, p)

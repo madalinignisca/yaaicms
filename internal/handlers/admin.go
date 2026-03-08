@@ -834,18 +834,6 @@ func templateNamePrefix(name string) string {
 	return name
 }
 
-// templateNameSuffix extracts the part after the separator (e.g., "Header" from "Theme — Header").
-// Returns the full name if no separator found.
-func templateNameSuffix(name string) string {
-	if idx := strings.Index(name, " \u2014 "); idx > 0 {
-		return name[idx+len(" \u2014 "):]
-	}
-	if idx := strings.Index(name, " - "); idx > 0 {
-		return name[idx+len(" - "):]
-	}
-	return name
-}
-
 // composeTemplateName builds a full template name from a group prefix and template type.
 // Always uses " — " (em dash) as the separator for consistency.
 func composeTemplateName(group string, tmplType models.TemplateType) string {
@@ -919,6 +907,8 @@ func (a *Admin) TemplateNew(w http.ResponseWriter, r *http.Request) {
 
 // TemplateCreate handles the new template form submission.
 func (a *Admin) TemplateCreate(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB limit for template forms.
+
 	tmplType := models.TemplateType(r.FormValue("type"))
 	htmlContent := r.FormValue("html_content")
 
@@ -1033,6 +1023,8 @@ func (a *Admin) TemplateEdit(w http.ResponseWriter, r *http.Request) {
 
 // TemplateUpdate handles the edit template form submission.
 func (a *Admin) TemplateUpdate(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB limit for template forms.
+
 	sess := middleware.SessionFromCtx(r.Context())
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
