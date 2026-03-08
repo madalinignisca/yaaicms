@@ -120,15 +120,27 @@
             </div>
         </div>
 
-        <!-- HTML Content Editor -->
+        <!-- HTML Content Editor (Ace) -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <label for="html_content" class="block text-sm font-medium text-gray-700 mb-2">
-                HTML + TailwindCSS Template
-            </label>
-            <textarea id="html_content" name="html_content" rows="20" required x-ref="editor"
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm
-                             placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-                      placeholder="Paste your HTML + TailwindCSS template here...">{{if .Data.Item}}{{.Data.Item.HTMLContent}}{{end}}</textarea>
+            <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    HTML + TailwindCSS Template
+                </label>
+                <div class="flex items-center gap-3 text-xs text-gray-500">
+                    <button type="button" @click="toggleEditorTheme()"
+                            class="hover:text-indigo-600 transition-colors"
+                            x-text="editorDark ? 'Light theme' : 'Dark theme'"></button>
+                    <button type="button" @click="toggleEditorWrap()"
+                            class="hover:text-indigo-600 transition-colors"
+                            x-text="editorWrap ? 'No wrap' : 'Wrap lines'"></button>
+                </div>
+            </div>
+            <!-- Hidden textarea for form submission -->
+            <textarea id="html_content" name="html_content" required x-ref="editor"
+                      class="hidden">{{if .Data.Item}}{{.Data.Item.HTMLContent}}{{end}}</textarea>
+            <!-- Ace Editor container -->
+            <div id="ace-editor" class="w-full rounded-md border border-gray-300 shadow-sm"
+                 style="height: 500px; font-size: 13px;"></div>
         </div>
 
         <!-- AI Improve -->
@@ -193,7 +205,7 @@
                         </button>
                     </div>
 
-                    <p class="text-xs text-gray-400">AI will read your current template and apply the requested changes. You can undo by pressing Ctrl+Z in the editor.</p>
+                    <p class="text-xs text-gray-400">AI will read your current template and apply the requested changes. Undo with Ctrl+Z in the code editor.</p>
                 </div>
             </div>
         </div>
@@ -339,9 +351,68 @@ function templateEditor() {
         previewContentID: '',
         previewContent: [],
         previewHTML: '',
+        aceEditor: null,
+        editorDark: false,
+        editorWrap: true,
 
         init() {
             this.loadPreviewContent();
+            this.$nextTick(() => this.initAceEditor());
+        },
+
+        initAceEditor() {
+            if (typeof ace === 'undefined') return;
+
+            this.aceEditor = ace.edit('ace-editor');
+            this.aceEditor.setTheme('ace/theme/chrome');
+            this.aceEditor.session.setMode('ace/mode/html');
+            this.aceEditor.setOptions({
+                fontSize: '13px',
+                tabSize: 2,
+                useSoftTabs: true,
+                wrap: true,
+                showPrintMargin: false,
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true,
+                enableSnippets: false,
+            });
+
+            // Load initial content from hidden textarea
+            const initial = this.$refs.editor.value;
+            if (initial) {
+                this.aceEditor.setValue(initial, -1);
+            }
+
+            // Sync Ace changes back to hidden textarea for form submission
+            this.aceEditor.session.on('change', () => {
+                this.$refs.editor.value = this.aceEditor.getValue();
+            });
+        },
+
+        getEditorValue() {
+            return this.aceEditor ? this.aceEditor.getValue() : this.$refs.editor.value;
+        },
+
+        setEditorValue(html) {
+            if (this.aceEditor) {
+                this.aceEditor.setValue(html, -1);
+            } else {
+                this.$refs.editor.value = html;
+            }
+        },
+
+        toggleEditorTheme() {
+            this.editorDark = !this.editorDark;
+            if (this.aceEditor) {
+                this.aceEditor.setTheme(this.editorDark ? 'ace/theme/monokai' : 'ace/theme/chrome');
+            }
+        },
+
+        toggleEditorWrap() {
+            this.editorWrap = !this.editorWrap;
+            if (this.aceEditor) {
+                this.aceEditor.session.setUseWrapMode(this.editorWrap);
+            }
         },
 
         csrfToken() {
@@ -362,7 +433,7 @@ function templateEditor() {
         },
 
         async refreshFormPreview() {
-            const html = this.$refs.editor.value;
+            const html = this.getEditorValue();
             if (!html.trim()) return;
             try {
                 const csrf = this.csrfToken();
@@ -387,7 +458,7 @@ function templateEditor() {
             const text = this.aiPrompt.trim();
             if (!text || this.aiLoading) return;
 
-            const currentHTML = this.$refs.editor.value;
+            const currentHTML = this.getEditorValue();
             if (!currentHTML.trim()) {
                 this.aiMessages.push({ role: 'assistant', content: 'The template editor is empty. Write some HTML first, or use the AI Template Builder to generate a template from scratch.' });
                 return;
@@ -422,8 +493,7 @@ function templateEditor() {
                 if (data.error) {
                     this.aiMessages.push({ role: 'assistant', content: 'Error: ' + data.error });
                 } else if (data.html) {
-                    this.$refs.editor.value = data.html;
-                    this.$refs.editor.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.setEditorValue(data.html);
 
                     let msg = data.message || 'Template updated.';
                     if (!data.valid && data.validation_error) {

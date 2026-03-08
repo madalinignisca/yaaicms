@@ -46,6 +46,18 @@ RUN mkdir -p web/static/js web/static/css \
     && curl -sLo web/static/css/easymde.min.css \
        "https://unpkg.com/easymde@2.20.0/dist/easymde.min.css"
 
+# Vendor Ace Editor for HTML template editing.
+ARG ACE_VERSION=1.36.5
+ARG ACE_CDN=https://cdn.jsdelivr.net/npm/ace-builds@${ACE_VERSION}/src-min-noconflict
+
+RUN mkdir -p web/static/js/ace \
+    && for f in ace.js ext-language_tools.js ext-searchbox.js \
+         mode-html.js mode-css.js mode-javascript.js \
+         worker-html.js worker-css.js worker-javascript.js \
+         theme-chrome.js theme-monokai.js; do \
+         curl -sLo "web/static/js/ace/$f" "${ACE_CDN}/$f"; \
+       done
+
 # ---------------------------------------------------------------------------
 # Stage 2: Go binary build (CGO enabled for libvips image processing)
 # ---------------------------------------------------------------------------
