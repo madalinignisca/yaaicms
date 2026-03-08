@@ -386,6 +386,7 @@ function templateEditor() {
             // Sync Ace changes back to hidden textarea for form submission
             this.aceEditor.session.on('change', () => {
                 this.$refs.editor.value = this.aceEditor.getValue();
+                this.$refs.editor.dispatchEvent(new Event('input', { bubbles: true }));
             });
         },
 
@@ -398,6 +399,7 @@ function templateEditor() {
                 this.aceEditor.setValue(html, -1);
             } else {
                 this.$refs.editor.value = html;
+                this.$refs.editor.dispatchEvent(new Event('input', { bubbles: true }));
             }
         },
 
